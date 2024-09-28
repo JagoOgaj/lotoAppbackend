@@ -1,29 +1,58 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
-from app import pwd_context
-from app import Base
+from app.extensions import pwd_context, db
 from datetime import datetime
+from app.tools import Roles
+import re
 
 
-class User(Base):
+class User(db.Model):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    _first_name = Column(String, nullable=False)
-    _last_name = Column(String, nullable=False)
-    _email = Column(String, unique=True, nullable=False)
+    _first_name = Column("first_name", String, nullable=False)
+    _last_name = Column("last_name", String, nullable=False)
+    _email = Column("email", String, unique=True, nullable=False)
     _password_hash = Column("password_hash", String, nullable=False)
-    _role_id = Column(Integer, ForeignKey('roles.id'), default=2)
+    _role_id = Column("role_id", Integer, ForeignKey(
+        'roles.id'), default=Roles.USER)
     created_at = Column(DateTime, default=datetime.now)
-    update_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     role = relationship("Role", back_populates="users")
     entries = relationship('Entry', back_populates='user')
 
     @hybrid_property
+    def first_name(self):
+        return self._first_name
+
+    @first_name.setter
+    def first_name(self, value):
+        if not value or not value.strip():
+            raise ValueError("Le prénom ne peut pas être vide.")
+        self._first_name = value.strip()
+
+    @hybrid_property
+    def last_name(self):
+        return self._last_name
+
+    @last_name.setter
+    def last_name(self, value):
+        if not value or not value.strip():
+            raise ValueError("Le nom ne peut pas être vide.")
+        self._last_name = value.strip()
+
+    @hybrid_property
     def email(self):
         return self._email
+
+    @email.setter
+    def email(self, value):
+        email_regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+        if not re.match(email_regex, value):
+            raise ValueError("Format d'email invalide.")
+        self._email = value.strip().lower()
 
     @hybrid_property
     def full_name(self):
@@ -39,11 +68,11 @@ class User(Base):
 
     @hybrid_property
     def is_admin(self):
-        return self.role.role_name == "admin"
+        return self.role.role_name == Roles.ADMIN
 
     @is_admin.expression
     def is_admin(cls):
-        return cls.role.has(role_name="admin")
+        return cls.role.has(role_name=Roles.ADMIN)
 
     @hybrid_property
     def password_hash(self):

@@ -1,3 +1,4 @@
 # app/controllers/__init__.py
-from .user_controller import UserController
-from .admin_controller import AdminController
+from .user_controller import user_bp
+from .admin_controller import admin_bp
+from .auth_controller import auth_bp
