@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, get_jwt
 from app.models import User
 from app.helpers import revoke_token, add_token_to_database, is_token_revoked
-from app.extensions import jwt
+from app.extensions import jwt, db
 from flask import current_app as app
 
 
@@ -35,8 +35,6 @@ def revoke_refresh_token():
     revoke_token(jti, user_id)
     return jsonify({"message": "Refresh token revoked"}), 200
 
-# Token revocation check
-
 
 @jwt.token_in_blocklist_loader
 def check_if_token_revoked(jwt_headers, jwt_payload):
@@ -44,6 +42,17 @@ def check_if_token_revoked(jwt_headers, jwt_payload):
         return is_token_revoked(jwt_payload)
     except Exception:
         return True
+
+
+@auth_bp.route("/get-role", methods=["GET"])
+@jwt_required()
+def get_role():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+    return jsonify({"role": user.role_name}), 200
 
 
 @jwt.user_lookup_loader

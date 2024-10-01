@@ -1,12 +1,12 @@
-# app/controllers/user_controller.py
 from flask import jsonify, request, Blueprint
 from marshmallow import ValidationError
-from app.schemas import UserLoginSchema, UserCreateSchema, UserOverviewInfoSchema, UserUpdateSchema, UserPasswordUpdateSchema, EntryRegistrySchema, LotteryListSchema, LotteryOverviewSchema
+from app.schemas import UserLoginSchema, UserCreateSchema, UserOverviewInfoSchema, UserUpdateSchema, UserPasswordUpdateSchema, EntryRegistrySchema, LotteryHistorySchema, LotteryOverviewSchema
 from app.models import User, Entry, Lottery
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt, get_current_user
 from app.extensions import db, pwd_context
-from app.helpers import add_token_to_database, revoke_token
+from app.helpers import add_token_to_database, revoke_token, generate_lottery_ranking
 from app.tools.status_tools import Status
+from datetime import datetime
 
 user_bp = Blueprint("user", __name__)
 
@@ -22,12 +22,14 @@ def login_user():
         email = data.get('email')
         password = data.get('password')
 
-        user = User.query.filter_by(_email=email).first()
+        user = User.query.filter_by(_email=email).one_or_none()
         if not user:
-            return jsonify({"message": "Aucun utilisateur trouvé", "errors": True}), 404
+            return jsonify(
+                {"message": "Aucun utilisateur trouvé", "errors": True}), 404
 
         if not pwd_context.verify(password, user.password_hash):
-            return jsonify({"message": "Mot de passe incorrect", "errors": True}), 401
+            return jsonify(
+                {"message": "Mot de passe incorrect", "errors": True}), 401
 
         access_token = create_access_token(identity=user.id)
         refresh_token = create_refresh_token(identity=user.id)
@@ -35,7 +37,9 @@ def login_user():
         add_token_to_database(access_token)
         add_token_to_database(refresh_token)
 
-        return jsonify({"access_token": access_token, "refresh_token": refresh_token}), 201
+        return jsonify({
+            "message": "Utilisateur trouvé avec succès.",
+            "access_token": access_token, "refresh_token": refresh_token}), 201
 
     except ValidationError as err:
         return jsonify({
@@ -56,7 +60,8 @@ def register_user():
         data = schema.load(data)
 
         if User.query.filter_by(_email=data['email']).first():
-            return jsonify({"errors": True, "message": "L'email est déjà utilisé."}), 400
+            return jsonify(
+                {"errors": True, "message": "L'email est déjà utilisé."}), 400
 
         new_user = User(
             _first_name=data['first_name'],
@@ -69,7 +74,14 @@ def register_user():
         db.session.add(new_user)
         db.session.commit()
 
-        return jsonify({"message": "Utilisateur créé avec succès."}), 201
+        access_token = create_access_token(identity=new_user.id)
+        refresh_token = create_refresh_token(identity=new_user.id)
+
+        return jsonify({
+            "message": "Utilisateur créé avec succès.",
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }), 201
 
     except ValidationError as err:
         return jsonify({
@@ -91,12 +103,17 @@ def register_user():
 def account_info():
     try:
         user = get_current_user()
-
         if not user:
-            return jsonify({'message': 'Aucun utilisateur trouvé', "errors": True}), 404
+            return jsonify(
+                {'message': 'Aucun utilisateur trouvé', "errors": True}), 404
 
         userOverviewInfo = UserOverviewInfoSchema()
-        user_data = userOverviewInfo.dump(user)
+        user_data = userOverviewInfo.dump({
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "notification": user.notification
+        })
 
         return jsonify(user_data)
     except ValidationError as err:
@@ -120,7 +137,8 @@ def update_info():
         user = get_current_user()
 
         if not user:
-            return jsonify({'message': 'Aucun utilisateur trouvé', "errors": True}), 404
+            return jsonify(
+                {'message': 'Aucun utilisateur trouvé', "errors": True}), 404
 
         data = request.get_json()
         userUpdateInfoSchema = UserUpdateSchema()
@@ -132,10 +150,13 @@ def update_info():
             user.last_name = user_data['last_name']
         if 'email' in user_data:
             user.email = user_data['email']
+        if 'notification' in user_data:
+            user.notification = user_data['notification']
 
         db.session.commit()
 
-        return jsonify({"message": "Vos informations ont été mises à jour avec succès."}), 200
+        return jsonify(
+            {"message": "Vos informations ont été mises à jour avec succès."}), 200
     except ValidationError as err:
         return jsonify({
             "errors": True,
@@ -157,26 +178,34 @@ def update_password():
         user = get_current_user()
 
         if not user:
-            return jsonify({'message': 'Aucun utilisateur trouvé', "errors": True}), 404
+            return jsonify(
+                {'message': 'Aucun utilisateur trouvé', "errors": True}), 404
 
         data = request.get_json()
         userUpdatePassword = UserPasswordUpdateSchema()
         user_data = userUpdatePassword.load(data)
-        if not pwd_context.verify(user_data['old_password'], user.password_hash):
-            return jsonify({'message': "L'ancien mot de passe est incorrect.", "errors": True}), 400
+        if not pwd_context.verify(
+                user_data['old_password'],
+                user.password_hash):
+            return jsonify({'message': "L'ancien mot de passe est incorrect.", "errors": True, "details": {
+                           "password": "L'ancien mot de passe est incorrect."}}), 400
 
         if pwd_context.verify(user_data['new_password'], user.password_hash):
-            return jsonify({'message': "Le nouveau mot de passe doit être différent de l'ancien.", "errors": True}), 400
+            return jsonify({'message': "Le nouveau mot de passe doit être différent de l'ancien.", "errors": True, "details": {
+                           "new_password": "Le nouveau mot de passe doit être différent de l'ancien."}}), 400
 
         user.password_hash = user_data['new_password']
         db.session.commit()
-        return jsonify({"message": "Votre mot de passe à été mises à jour avec succès."}), 200
+        return jsonify(
+            {"message": "Votre mot de passe à été mises à jour avec succès."}), 200
 
     except ValidationError as err:
         return jsonify({
             "errors": True,
             "message": "Erreur de mise à jour de votre mot de passe",
-            "details": err.messages
+            "details": {
+                "new_password": err.messages.get("new_password", [])
+            }
         }), 400
     except Exception as e:
         return jsonify({
@@ -208,7 +237,8 @@ def lottery_registry():
     try:
         user_id = get_jwt_identity()
         if not user_id:
-            return jsonify({'message': 'Aucun utilisateur trouvé', "errors": True}), 404
+            return jsonify(
+                {'message': 'Aucun utilisateur trouvé', "errors": True}), 404
 
         data = request.get_json()
         entryRegistrySchema = EntryRegistrySchema()
@@ -216,10 +246,12 @@ def lottery_registry():
 
         lottery = Lottery.query.get(entryResgistryData['lottery_id'])
         if not lottery:
-            return jsonify({'message': 'Loterie non trouvée.', "errors": True}), 404
+            return jsonify(
+                {'message': 'Loterie non trouvée.', "errors": True}), 404
 
-        if lottery.status in [Status.TERMINE, Status.SIMULATION_TERMINE] or not lottery.is_active:
-            return jsonify({'message': 'La loterie n\'est pas active ou n\'est pas en cours.', "errors": True}), 400
+        if lottery.status in [Status.TERMINE] or not lottery.is_active:
+            return jsonify(
+                {'message': 'La loterie n\'est pas active ou n\'est pas en cours.', "errors": True}), 400
 
         new_entry = Entry(
             user_id=user_id,
@@ -233,7 +265,6 @@ def lottery_registry():
 
         return jsonify({
             "message": "Inscription à la loterie réussie.",
-            "entry_id": new_entry.id
         }), 201
 
     except ValidationError as err:
@@ -256,7 +287,8 @@ def lottery_history_user():
     try:
         user_id = get_jwt_identity()
         if not user_id:
-            return jsonify({'message': 'Aucun utilisateur trouvé', "errors": True}), 404
+            return jsonify(
+                {'message': 'Aucun utilisateur trouvé', "errors": True}), 404
 
         user_entries = Entry.query.filter_by(user_id=user_id).all()
         if not user_entries:
@@ -267,30 +299,44 @@ def lottery_history_user():
             }), 404
 
         lotteries = []
+        current_date = datetime.utcnow()
+
         for entry in user_entries:
             lottery = Lottery.query.get(entry.lottery_id)
 
+            if current_date >= lottery.end_date and lottery.status not in [
+                    Status.TERMINE, Status.EN_VALIDATION]:
+                lottery.status = Status.EN_VALIDATION
+                db.session.commit()
+
+            # Formater la date pour l'affichage
+            date_participation = entry.date.strftime('%d %B %Y')
+            date_tirage = lottery.end_date.strftime('%d %B %Y')
+
             lotteries.append({
-                "name": lottery.name,
-                "start_date": lottery.start_date,
-                "end_date": lottery.end_date,
-                "status": lottery.status,
-                "max_participants": lottery.max_participants,
-                "participant_count": lottery.participant_count,
-                "reward_price": lottery.reward_price
+                "id": lottery.id,
+                "date": date_participation,
+                "statut": lottery.status,
+                "numerosJoues": ', '.join(map(str, entry.numbers)),
+                "numerosChance": ', '.join(map(str, entry.chance_numbers)),
+                "dateTirage": date_tirage
             })
-        schema = LotteryListSchema(many=True)
+
+        schema = LotteryHistorySchema(many=True)
         result = schema.dump(lotteries)
+
         return jsonify({
             "message": "Historique des participations récupéré avec succès.",
             "data": result
         }), 200
+
     except ValidationError as err:
         return jsonify({
             "errors": True,
             "message": "Erreur de récupération de l'historique",
             "details": err.messages
         }), 400
+
     except Exception as e:
         return jsonify({
             "errors": True,
@@ -303,11 +349,22 @@ def lottery_history_user():
 @jwt_required()
 def get_current_lottery():
     try:
+        user = get_current_user()
+        if not user:
+            return jsonify(
+                {'message': 'Aucun utilisateur trouvé', "errors": True}), 404
+
         current_lottery = Lottery.query.filter_by(
-            status=Status.EN_COUR).first()
+            status=Status.EN_COUR).one_or_none()
 
         if not current_lottery:
-            return jsonify({"errors": True, "message": "Aucun tirage en cours trouvé."}), 404
+            return jsonify(
+                {"errors": False, "message": "Aucun tirage en cours trouvé."}), 404
+        is_registered = Entry.query.filter_by(
+            user_id=user.id, lottery_id=current_lottery.id).one_or_none()
+        if is_registered:
+            return jsonify(
+                {"errors": True, "message": "Vous êtes déjà inscrit à cette loterie."}), 400
 
         lottery_schema = LotteryOverviewSchema()
         result = lottery_schema.dump(current_lottery)
@@ -315,7 +372,8 @@ def get_current_lottery():
         return jsonify(result), 200
 
     except Exception as e:
-        return jsonify({"errors": True, "message": "Une erreur est survenue", "details": str(e)}), 500
+        return jsonify(
+            {"errors": True, "message": "Une erreur est survenue", "details": str(e)}), 500
 
 
 @user_bp.route('/lottery-details/<int:lottery_id>', methods=['GET'])
@@ -328,6 +386,12 @@ def lottery_details(lottery_id):
                 "errors": True,
                 "message": "Loterie non trouvée."
             }), 404
+
+        current_date = datetime.utcnow()
+        if current_date >= lottery.end_date and lottery.status not in [
+                Status.TERMINE, Status.EN_VALIDATION]:
+            lottery.status = Status.EN_VALIDATION
+            db.session.commit()
         lotteryOverviewschema = LotteryOverviewSchema()
         result = lotteryOverviewschema.dump(lottery)
         return jsonify({
@@ -352,5 +416,4 @@ def lottery_details(lottery_id):
 @user_bp.route('/lottery-rank/<int:lottery_id>', methods=['GET'])
 @jwt_required()
 def lottery_rank(lottery_id):
-    # Logique pour obtenir le classement d'une loterie
-    pass
+    return generate_lottery_ranking(lottery_id)

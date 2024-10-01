@@ -20,6 +20,7 @@ CREATE TABLE users (
     email VARCHAR UNIQUE NOT NULL,                              -- Adresse e-mail de l'utilisateur
     password_hash VARCHAR NOT NULL,                             -- Mot de passe haché                                            
     role_id INT REFERENCES roles(id) ON DELETE SET NULL,        -- Référence au rôle de l'utilisateur
+    notification BOOLEAN DEFAULT FALSE,                         -- Champ pour les notifications (true/false)
     created_at TIMESTAMP,                                       -- Date de création du compte
     updated_at TIMESTAMP                                        -- Date de mise à jour
 );

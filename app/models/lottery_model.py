@@ -5,14 +5,16 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from app.extensions import db
 from sqlalchemy import func
 
+from app.tools.status_tools import Status
+
 
 class Lottery(db.Model):
     __tablename__ = 'lotteries'
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     _name = Column("name", String, nullable=False)
-    _start_date = Column("start_date", DateTime, nullable=False)
-    _end_date = Column("end_date", DateTime, nullable=False)
+    _start_date = Column("start_date", DateTime, nullable=True)
+    _end_date = Column("end_date", DateTime, nullable=True)
     _status = Column("status", String, nullable=False)
     _reward_price = Column("reward_price", Integer, nullable=False)
     _max_participants = Column("max_participants", Integer, nullable=False)
@@ -53,6 +55,8 @@ class Lottery(db.Model):
 
     @hybrid_property
     def is_active(self):
+        if self._status == Status.SIMULATION:
+            return False
         return self.start_date <= datetime.now() <= self.end_date
 
     @is_active.expression

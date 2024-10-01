@@ -7,3 +7,4 @@ marshmallow
 marshmallow-sqlalchemy
 passlib
 python-dotenv
+flask-cors

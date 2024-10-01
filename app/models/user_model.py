@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 from app.extensions import pwd_context, db
@@ -17,6 +17,7 @@ class User(db.Model):
     _password_hash = Column("password_hash", String, nullable=False)
     _role_id = Column("role_id", Integer, ForeignKey(
         'roles.id'), default=Roles.USER)
+    _notification = Column("notification", Boolean, default=False)
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
@@ -53,6 +54,14 @@ class User(db.Model):
         if not re.match(email_regex, value):
             raise ValueError("Format d'email invalide.")
         self._email = value.strip().lower()
+
+    @hybrid_property
+    def notification(self):
+        return self._notification
+
+    @notification.setter
+    def notification(self, value):
+        self._notification = value
 
     @hybrid_property
     def full_name(self):

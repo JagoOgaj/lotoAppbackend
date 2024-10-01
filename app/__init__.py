@@ -3,11 +3,15 @@ from flask import Flask
 from app.config import Config
 from app.controllers import user_bp, admin_bp, auth_bp
 from app.extensions import db, jwt, ma
+from flask_cors import CORS
 
 
 def create_app() -> Flask:
     app: Flask = Flask(__name__)
     app.config.from_object(Config)
+
+    # Init Cors
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     # Init Extension
     db.init_app(app)

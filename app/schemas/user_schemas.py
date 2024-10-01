@@ -1,20 +1,24 @@
-from marshmallow import Schema, ValidationError, fields, post_load, validates, validates_schema
-from app.models import User
-from app.extensions import pwd_context
+from marshmallow import Schema, ValidationError, fields, validates, validates_schema
 import re
 
 
 class UserCreateSchema(Schema):
-    first_name = fields.Str(required=True, validate=[
-        fields.Length(
-            min=2, max=50, error="Le prénom doit contenir entre 2 et 50 caractères.")
-    ])
-    last_name = fields.Str(required=True, validate=[
-        fields.Length(
-            min=2, max=50, error="Le nom doit contenir entre 2 et 50 caractères.")
-    ])
-    email = fields.Email(required=True, error_messages={
-                         "required": "L'email est requis."})
+    first_name = fields.Str(
+        required=True,
+        validate=[
+            fields.Length(
+                min=2,
+                max=50,
+                error="Le prénom doit contenir entre 2 et 50 caractères.")])
+    last_name = fields.Str(
+        required=True,
+        validate=[
+            fields.Length(
+                min=2,
+                max=50,
+                error="Le nom doit contenir entre 2 et 50 caractères.")])
+    email = fields.Str(required=True, error_messages={
+        "required": "L'email est requis."})
     password = fields.Str(load_only=True, required=True)
 
     @validates('email')
@@ -22,8 +26,10 @@ class UserCreateSchema(Schema):
         if not value:
             raise ValidationError(
                 "L'email est requis et ne peut pas être vide.")
-        email_regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
-        if not re.match(email_regex, value):
+
+        if not re.match(
+            r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$",
+                value):
             raise ValidationError("Format d'email invalide.")
 
     @validates('password')
@@ -48,19 +54,22 @@ class UserCreateSchema(Schema):
     def validate_name(self, data, **kwargs):
         if not data['first_name'].strip():
             raise ValidationError(
-                "Le prénom ne peut pas être vide ou composé uniquement d'espaces.", field_name="first_name")
+                "Le prénom ne peut pas être vide ou composé uniquement d'espaces.",
+                field_name="first_name")
         if not data['last_name'].strip():
             raise ValidationError(
-                "Le nom ne peut pas être vide ou composé uniquement d'espaces.", field_name="last_name")
+                "Le nom ne peut pas être vide ou composé uniquement d'espaces.",
+                field_name="last_name")
 
     class Meta:
         fields = ('first_name', 'last_name', 'email', 'password')
 
 
 class UserUpdateSchema(Schema):
-    first_name = fields.Str()
-    last_name = fields.Str()
-    email = fields.Email()
+    first_name = fields.Str(required=False)
+    last_name = fields.Str(required=False)
+    email = fields.Email(required=False)
+    notification = fields.Boolean(required=False)
 
     @validates('email')
     def validate_email(self, value):
@@ -72,18 +81,25 @@ class UserUpdateSchema(Schema):
         if not re.match(email_regex, value):
             raise ValidationError("Format d'email invalide.")
 
-    @validates_schema
-    def validate_name(self, data, **kwargs):
-        if not data['first_name'].strip():
-            raise ValidationError(
-                "Le prénom ne peut pas être vide ou composé uniquement d'espaces.", field_name="first_name")
-        if not data['last_name'].strip():
-            raise ValidationError(
-                "Le nom ne peut pas être vide ou composé uniquement d'espaces.", field_name="last_name")
+    @validates('first_name')
+    def validate_first_name(self, value):
+        if value is not None:  # Vérifie uniquement si la valeur est fournie
+            if not value.strip():
+                raise ValidationError(
+                    "Le prénom ne peut pas être vide ou composé uniquement d'espaces.")
+            if len(value) < 2:
+                raise ValidationError(
+                    "Le prénom doit avoir 2 character au minimum")
 
-    class Meta:
-        fields = ('first_name', 'last_name', 'email')
-        exclude = ('password_hash',)
+    @validates('last_name')
+    def validate_last_name(self, value):
+        if value is not None:  # Vérifie uniquement si la valeur est fournie
+            if not value.strip():
+                raise ValidationError(
+                    "Le nom ne peut pas être vide ou composé uniquement d'espaces.")
+            if len(value) < 2:
+                raise ValidationError(
+                    "Le nom de famille doit avoir 2 character au minimum")
 
 
 class UserPasswordUpdateSchema(Schema):
@@ -134,6 +150,7 @@ class UserOverviewInfoSchema(Schema):
     first_name = fields.Str(required=True)
     last_name = fields.Str(required=True)
     email = fields.Email(required=True)
+    notification = fields.Boolean(required=True)
 
 
 class UserOverviewAdvancedSchema(Schema):

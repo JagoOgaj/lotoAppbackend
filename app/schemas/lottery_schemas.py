@@ -1,12 +1,12 @@
-from marshmallow import Schema, fields, post_load, validates, validates_schema, ValidationError
+from marshmallow import Schema, fields, validates, validates_schema, ValidationError
 from datetime import datetime
 from app.tools import Status
 
 
 class LotteryCreateSchema(Schema):
     name = fields.Str(required=True)
-    start_date = fields.DateTime(required=True)
-    end_date = fields.DateTime(required=True)
+    start_date = fields.Str(required=False)
+    end_date = fields.Str(required=False)
     status = fields.Str(required=True)
     reward_price = fields.Int(required=True)
     max_participants = fields.Int(required=True)
@@ -43,9 +43,7 @@ class LotteryCreateSchema(Schema):
 
     @validates_schema
     def validate_date(self, data, **kwargs):
-        if (not isinstance(data['start_date'], datetime)) or (not isinstance(data['end_date'], datetime)):
-            raise ValidationError("Mauvais format pour les dates")
-        if data['start_date'] >= data['end_date']:
+        if datetime(data['start_date']) >= datetime(data['end_date']):
             raise ValidationError(
                 "La fin du tirage ne dois pas etre avant le début du tirage")
 
@@ -56,8 +54,8 @@ class LotteryCreateSchema(Schema):
 
 class LotteryUpdateSchema(Schema):
     name = fields.Str()
-    start_date = fields.DateTime()
-    end_date = fields.DateTime()
+    start_date = fields.Str()
+    end_date = fields.Str()
     status = fields.Str()
     max_participants = fields.Int()
 
@@ -81,9 +79,8 @@ class LotteryUpdateSchema(Schema):
 
     @validates_schema
     def validate_date(self, data, **kwargs):
-        if (not isinstance(data['start_date'], datetime)) or (not isinstance(data['end_date'], datetime)):
-            raise ValidationError("Mauvais format pour les dates")
-        if data['start_date'] >= data['end_date']:
+
+        if datetime(data['start_date']) >= datetime(data['end_date']):
             raise ValidationError(
                 "La fin du tirage ne dois pas etre avant le début du tirage")
 
@@ -92,28 +89,24 @@ class LotteryUpdateSchema(Schema):
                   'status', 'max_participants')
 
 
-class LotteryListSchema(Schema):
-    name = fields.Str()
-    start_date = fields.DateTime()
-    end_date = fields.DateTime()
-    status = fields.Str()
-    reward_price = fields.Int()
-    max_participants = fields.Int()
-    participant_count = fields.Int()
-
-    class Meta:
-        fields = ('name', 'start_date', 'end_date', 'status', 'reward_price',
-                  'participant_count', 'max_participants')
+class LotteryHistorySchema(Schema):
+    id = fields.Int(required=True)
+    date = fields.Str(required=True)
+    statut = fields.Str(required=True)
+    numerosJoues = fields.Str(required=True)
+    numerosChance = fields.Str(required=True)
+    dateTirage = fields.Str(required=True)
 
 
 class LotteryOverviewSchema(Schema):
-    name = fields.Str()
-    start_date = fields.DateTime()
-    end_date = fields.DateTime()
-    status = fields.Str()
-    reward_price = fields.Int()
-    max_participants = fields.Int()
-    participant_count = fields.Int()
+    id = fields.Int(required=True)
+    name = fields.Str(required=True)
+    start_date = fields.DateTime(required=False, allow_none=True)
+    end_date = fields.DateTime(required=False, allow_none=True)
+    status = fields.Str(required=True)
+    reward_price = fields.Int(required=True)
+    max_participants = fields.Int(required=True)
+    participant_count = fields.Int(required=True)
 
     class Meta:
         fields = ('name', 'start_date', 'end_date', 'status', 'reward_price',
