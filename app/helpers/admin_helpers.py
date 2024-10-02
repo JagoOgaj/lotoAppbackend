@@ -1,7 +1,9 @@
 from functools import wraps
 from flask_jwt_extended import get_jwt_identity
 from flask import jsonify
-from app.models import User
+from app.models import User, Role
+from app.tools.roles_tools import Roles
+from app.tools import email_sender
 
 
 def admin_role_required(func):
@@ -15,3 +17,18 @@ def admin_role_required(func):
 
         return func(*args, **kwargs)
     return wrapper
+
+
+def send_email_to_users():
+    try:
+        users = User.query.join(Role).filter(
+            Role.role_name == Roles.USER,
+            User.notification == True).all()
+        if not users:
+            raise Exception(
+                "Aucun utilisateur trouver")
+        for user in users:
+            email_sender(user.email)
+    except Exception as e:
+        raise Exception(
+            "Une erreur est survenue lors de l'envoie des mails")

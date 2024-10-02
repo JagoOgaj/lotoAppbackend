@@ -1,11 +1,16 @@
 from marshmallow import Schema, fields
 
 
-class LotteryResultOverviewSchema(Schema):
-    name = fields.Str(attribute='lottery.name')
-    start_date = fields.DateTime(attribute='lottery.start_date')
-    end_date = fields.DateTime(attribute='lottery.end_date')
+class LotteryResultOverviewSchema(
+        Schema):
+    name = fields.Str(
+        attribute='lottery.name')
+    start_date = fields.DateTime(
+        attribute='lottery.start_date')
+    end_date = fields.DateTime(
+        attribute='lottery.end_date')
     wining_numbers = fields.Str()
+    wining_lucky_numes = fields.Str()
 
 
 class LotteryWinerSchema(Schema):
@@ -15,4 +20,8 @@ class LotteryWinerSchema(Schema):
     winnings = fields.Int(required=True)
 
     class Meta:
-        fields = ('rank', 'name', 'score', 'winnings')
+        fields = (
+            'rank',
+            'name',
+            'score',
+            'winnings')

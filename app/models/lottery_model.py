@@ -11,17 +11,44 @@ from app.tools.status_tools import Status
 class Lottery(db.Model):
     __tablename__ = 'lotteries'
 
-    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    _name = Column("name", String, nullable=False)
-    _start_date = Column("start_date", DateTime, nullable=True)
-    _end_date = Column("end_date", DateTime, nullable=True)
-    _status = Column("status", String, nullable=False)
-    _reward_price = Column("reward_price", Integer, nullable=False)
-    _max_participants = Column("max_participants", Integer, nullable=False)
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True,
+        index=True)
+    _name = Column(
+        "name",
+        String,
+        nullable=False)
+    _start_date = Column(
+        "start_date",
+        DateTime,
+        nullable=True)
+    _end_date = Column(
+        "end_date",
+        DateTime,
+        nullable=True)
+    _status = Column(
+        "status",
+        String,
+        nullable=False)
+    _reward_price = Column(
+        "reward_price",
+        Integer,
+        nullable=False)
+    _max_participants = Column(
+        "max_participants",
+        Integer,
+        nullable=False)
+    created_at = Column(
+        DateTime, default=datetime.now)
+    updated_at = Column(
+        DateTime,
+        default=datetime.now,
+        onupdate=datetime.now)
 
-    entries = relationship('Entry', back_populates='lottery')
+    entries = relationship(
+        'Entry', back_populates='lottery')
     results = relationship(
         'LotteryResult', back_populates='lottery', uselist=False)
 
@@ -57,8 +84,10 @@ class Lottery(db.Model):
     def is_active(self):
         if self._status == Status.SIMULATION:
             return False
-        return self.start_date <= datetime.now() <= self.end_date
+        return self.start_date <= datetime.now(
+        ) <= self.end_date
 
     @is_active.expression
     def is_active(cls):
-        return func.now().between(cls._start_date, cls._end_date)
+        return func.now().between(
+            cls._start_date, cls._end_date)

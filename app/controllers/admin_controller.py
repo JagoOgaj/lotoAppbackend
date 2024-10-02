@@ -1,11 +1,11 @@
 from flask import jsonify, request, Blueprint
 from app.extensions import db, pwd_context
-from app.helpers import admin_role_required
+from app.helpers import admin_role_required, send_email_to_users
 from app.schemas import UserLoginSchema, UserOverviewInfoSchema, UserUpdateSchema, UserPasswordUpdateSchema, LotteryCreateSchema, EntryOverviewSchema, EntryAdminAddUserSchema, LotteryUpdateSchema
 from flask_jwt_extended import jwt_required, create_access_token, create_refresh_token, get_current_user, get_jwt, get_jwt_identity
 from marshmallow import ValidationError
-from app.models import User, Lottery, Entry
-from app.helpers import add_token_to_database, revoke_token, generate_lottery_ranking, generate_random_user
+from app.models import User, Lottery, Entry, LotteryResult
+from app.helpers import add_token_to_database, revoke_token, generate_random_user, generate_wining_numbers, generate_luck_numbers, get_formatted_results
 from app.schemas.lottery_schemas import LotteryOverviewSchema
 from app.tools import Status
 from datetime import datetime
@@ -13,7 +13,8 @@ from datetime import datetime
 admin_bp = Blueprint("admin", __name__)
 
 
-@admin_bp.route('/login', methods=['POST'])
+@admin_bp.route('/login',
+                methods=['POST'])
 def login_admin():
     try:
         data = request.get_json()
@@ -23,19 +24,26 @@ def login_admin():
         email = data.get('email')
         password = data.get('password')
 
-        userAdmin = User.query.filter_by(_email=email).first()
+        userAdmin = User.query.filter_by(
+            _email=email).first()
         if not userAdmin:
-            return jsonify({"errors": "Aucun utilisateur trouvé"}), 404
+            return jsonify(
+                {"errors": "Aucun utilisateur trouvé"}), 404
 
-        if not pwd_context.verify(password, userAdmin.password_hash):
+        if not pwd_context.verify(
+                password, userAdmin.password_hash):
             return jsonify(
                 {"message": "Mot de passe incorrect", "errors": True}), 401
 
-        access_token = create_access_token(identity=userAdmin.id)
-        refresh_token = create_refresh_token(identity=userAdmin.id)
+        access_token = create_access_token(
+            identity=userAdmin.id)
+        refresh_token = create_refresh_token(
+            identity=userAdmin.id)
 
-        add_token_to_database(access_token)
-        add_token_to_database(refresh_token)
+        add_token_to_database(
+            access_token)
+        add_token_to_database(
+            refresh_token)
 
         return jsonify({"access_token": access_token,
                        "refresh_token": refresh_token}), 201
@@ -48,10 +56,12 @@ def login_admin():
         }), 400
 
     except Exception as e:
-        return jsonify({"message": str(e), "errors": True, }), 400
+        return jsonify({"message": str(
+            e), "errors": True, }), 400
 
 
-@admin_bp.route('/account-info', methods=['GET'])
+@admin_bp.route('/account-info',
+                methods=['GET'])
 @jwt_required()
 @admin_role_required
 def account_info():
@@ -63,7 +73,8 @@ def account_info():
                 {'message': 'Aucun utilisateur trouvé', "errors": True}), 404
 
         userOverviewInfo = UserOverviewInfoSchema()
-        userAdmin_data = userOverviewInfo.dump(userAdmin)
+        userAdmin_data = userOverviewInfo.dump(
+            userAdmin)
         return jsonify(userAdmin_data)
     except ValidationError as err:
         return jsonify({
@@ -79,7 +90,8 @@ def account_info():
         }), 500
 
 
-@admin_bp.route('/update-info', methods=['PUT'])
+@admin_bp.route('/update-info',
+                methods=['PUT'])
 @jwt_required()
 @admin_role_required
 def update_info():
@@ -91,7 +103,8 @@ def update_info():
 
         data = request.get_json()
         userUpdateInfoSchema = UserUpdateSchema()
-        user_data = userUpdateInfoSchema.load(data)
+        user_data = userUpdateInfoSchema.load(
+            data)
 
         if 'first_name' in user_data:
             userAdmin.first_name = user_data['first_name']
@@ -117,7 +130,8 @@ def update_info():
         }), 500
 
 
-@admin_bp.route('/update-password', methods=['PUT'])
+@admin_bp.route('/update-password',
+                methods=['PUT'])
 @jwt_required()
 @admin_role_required
 def update_password():
@@ -130,7 +144,8 @@ def update_password():
 
         data = request.get_json()
         userUpdatePassword = UserPasswordUpdateSchema()
-        userAdmin_data = userUpdatePassword.load(data)
+        userAdmin_data = userUpdatePassword.load(
+            data)
         if not pwd_context.verify(
                 userAdmin_data['old_password'],
                 userAdmin.password_hash):
@@ -162,12 +177,14 @@ def update_password():
         }), 500
 
 
-@admin_bp.route('/delete-lottery/<int:lottery_id>', methods=['DELETE'])
+@admin_bp.route('/delete-lottery/<int:lottery_id>',
+                methods=['DELETE'])
 @jwt_required()
 @admin_role_required
 def delete_lottery(lottery_id):
     try:
-        lottery = Lottery.query.get(lottery_id)
+        lottery = Lottery.query.get(
+            lottery_id)
         if not lottery:
             return jsonify({
                 "errors": True,
@@ -189,14 +206,16 @@ def delete_lottery(lottery_id):
         }), 500
 
 
-@admin_bp.route('/create-lottery', methods=['POST'])
+@admin_bp.route('/create-lottery',
+                methods=['POST'])
 @jwt_required()
 @admin_role_required
 def lottery_create():
     try:
         data = request.get_json()
         lotteryCreateSchema = LotteryCreateSchema()
-        data = lotteryCreateSchema.load(data)
+        data = lotteryCreateSchema.load(
+            data)
 
         existing_lottery = Lottery.query.filter_by(
             status=Status.EN_COUR).first()
@@ -218,17 +237,20 @@ def lottery_create():
         else:
             new_lottery = Lottery(
                 _name=data['name'],
-                _start_date=datetime(data['start_date']),
-                _end_date=datetime(data['end_date']),
+                _start_date=datetime(
+                    data['start_date']),
+                _end_date=datetime(
+                    data['end_date']),
                 _status=data['status'],
                 _reward_price=data['reward_price'],
                 _max_participants=data['max_participants']
             )
 
-        # Envoi d'un mail aux utilisateurs si nécessaire
+        send_email_to_users()
         db.session.add(new_lottery)
         db.session.commit()
-        return jsonify({"message": "Le tirage a été créé avec succès."}), 201
+        return jsonify(
+            {"message": "Le tirage a été créé avec succès."}), 201
 
     except ValidationError as err:
         return jsonify({
@@ -245,12 +267,14 @@ def lottery_create():
         }), 500
 
 
-@admin_bp.route('/update-lottery/<int:lottery_id>', methods=['PUT'])
+@admin_bp.route('/update-lottery/<int:lottery_id>',
+                methods=['PUT'])
 @jwt_required
 @admin_role_required
 def update_lottery(lottery_id):
     try:
-        lottery = Lottery.query.filter_by(id=lottery_id).one_or_none()
+        lottery = Lottery.query.filter_by(
+            id=lottery_id).one_or_none()
         if lottery is None:
             return jsonify({
                 "errors": True,
@@ -259,14 +283,17 @@ def update_lottery(lottery_id):
 
         data = request.get_json()
         lotteryUpdateSchema = LotteryUpdateSchema()
-        lottery_data = lotteryUpdateSchema.load(data)
+        lottery_data = lotteryUpdateSchema.load(
+            data)
 
         if 'name' in lottery_data:
             lottery.name = lottery_data['name']
         if 'start_date' in lottery_data:
-            lottery.start_date = datetime(lottery_data['start_date'])
+            lottery.start_date = datetime(
+                lottery_data['start_date'])
         if 'end_date' in lottery_data:
-            lottery.end_date = datetime(lottery_data['end_date'])
+            lottery.end_date = datetime(
+                lottery_data['end_date'])
         if 'status' in lottery_data:
             lottery.status = lottery_data['status']
         if 'max_participants' in lottery_data:
@@ -292,7 +319,8 @@ def update_lottery(lottery_id):
         }), 500
 
 
-@admin_bp.route('/lottery-list', methods=['GET'])
+@admin_bp.route('/lottery-list',
+                methods=['GET'])
 @jwt_required()
 @admin_role_required
 def lottery_list():
@@ -305,8 +333,10 @@ def lottery_list():
                 lottery.status = Status.EN_VALIDATION
                 db.session.commit()
 
-        lotteryListSchema = LotteryOverviewSchema(many=True)
-        result = lotteryListSchema.dump(lotteries)
+        lotteryListSchema = LotteryOverviewSchema(
+            many=True)
+        result = lotteryListSchema.dump(
+            lotteries)
         return jsonify({
             "message": "Liste des tirages récupérée avec succès.",
             "data": result
@@ -327,12 +357,14 @@ def lottery_list():
         }), 500
 
 
-@admin_bp.route('/lottery-details/<int:lottery_id>', methods=['GET'])
+@admin_bp.route('/lottery-details/<int:lottery_id>',
+                methods=['GET'])
 @jwt_required()
 @admin_role_required
 def lottery_details(lottery_id):
     try:
-        lottery = Lottery.query.filter_by(id=lottery_id).one_or_none()
+        lottery = Lottery.query.filter_by(
+            id=lottery_id).one_or_none()
         if lottery is None:
             return jsonify({
                 "errors": True,
@@ -346,7 +378,8 @@ def lottery_details(lottery_id):
             db.session.commit()
 
         lotteryOverviewschema = LotteryOverviewSchema()
-        result = lotteryOverviewschema.dump(lottery)
+        result = lotteryOverviewschema.dump(
+            lottery)
         return jsonify({
             "message": "Details du tirage",
             "data": result
@@ -367,19 +400,25 @@ def lottery_details(lottery_id):
         }), 500
 
 
-@admin_bp.route('/participants-list/<int:lottery_id>', methods=['GET'])
+@admin_bp.route('/participants-list/<int:lottery_id>',
+                methods=['GET'])
 @jwt_required()
 @admin_role_required
 def participants_list(lottery_id):
     try:
-        lottery = Lottery.query.get_or_404(lottery_id)
-        if lottery.status in [Status.TERMINE, Status.SIMULATION_TERMINE]:
+        lottery = Lottery.query.get_or_404(
+            lottery_id)
+        if lottery.status in [
+                Status.TERMINE, Status.SIMULATION_TERMINE]:
             return jsonify(
                 {"message": "Le tirage est déjà terminé.", "errors": True}), 403
-        participants = Entry.query.filter_by(lottery_id=lottery.id).all()
+        participants = Entry.query.filter_by(
+            lottery_id=lottery.id).all()
 
-        entry_schema = EntryOverviewSchema(many=True)
-        result = entry_schema.dump(participants)
+        entry_schema = EntryOverviewSchema(
+            many=True)
+        result = entry_schema.dump(
+            participants)
 
         return jsonify({
             "message": "Liste des participants récupérée avec succès.",
@@ -400,27 +439,64 @@ def participants_list(lottery_id):
         }), 500
 
 
-@admin_bp.route('/lottery-rank/<int:lottery_id>', methods=['GET'])
+@admin_bp.route('/lottery-rank/<int:lottery_id>',
+                methods=['GET'])
 @jwt_required()
 @admin_role_required
 def lottery_rank(lottery_id):
-    return generate_lottery_ranking(lottery_id)
+    try:
+        lottery_result = db.session.query(
+            LotteryResult).filter_by(lottery_id=lottery_id).first()
+        if not lottery_result:
+            return jsonify(
+                {"message": "Pas de résultats pour se tirage", "errors": True}), 404
+
+        draw_numbers = set(map(
+            int, lottery_result.winning_numbers.split(',')))
+        draw_stars = set(
+            map(int, lottery_result.winning_lucky_numbers.split(',')))
+
+        participants = db.session.query(
+            Entry).filter_by(lottery_id=lottery_id).all()
+
+        if not participants:
+            return jsonify(
+                {"message": "Pas de participants pour se tirage", "errors": True}), 404
+
+        lottery = db.session.query(
+            Lottery).filter_by(id=lottery_id).first()
+        reward_price = lottery.reward_price
+
+        formatted_results = get_formatted_results(
+            participants, draw_numbers, draw_stars, reward_price)
+        if formatted_results:
+            return jsonify(
+                {"message": "Les resultats du tirage", "data": formatted_results})
+        raise Exception(
+            "Pas de resultats trouver")
+    except Exception as e:
+        return jsonify(
+            {"errors": True, "message": "Une erreurs est survenue", "details": str(e)}), 500
 
 
-@admin_bp.route('/manage-participants/remove', methods=['DELETE'])
+@admin_bp.route('/manage-participants/remove',
+                methods=['DELETE'])
 @jwt_required()
 @admin_role_required
 def manage_participants_remove():
     try:
         data = request.get_json()
 
-        lottery_id = data.get('lottery_id')
+        lottery_id = data.get(
+            'lottery_id')
         if not lottery_id:
             return jsonify(
                 {"errors": True, "message": "L'ID du tirage est requis."}), 400
 
-        lottery = Lottery.query.get_or_404(lottery_id)
-        if lottery.status in [Status.TERMINE, Status.SIMULATION_TERMINE]:
+        lottery = Lottery.query.get_or_404(
+            lottery_id)
+        if lottery.status in [
+                Status.TERMINE, Status.SIMULATION_TERMINE]:
             return jsonify(
                 {"message": "Le tirage est déjà terminé.", "errors": True}), 403
 
@@ -444,21 +520,26 @@ def manage_participants_remove():
             {"errors": True, "message": "Une erreur est survenue", "details": str(e)}), 500
 
 
-@admin_bp.route('/manage-participants/add/<int:lottery_id>', methods=['PUT'])
+@admin_bp.route('/manage-participants/add/<int:lottery_id>',
+                methods=['PUT'])
 @jwt_required()
 @admin_role_required
 def manage_particiants_add(lottery_id):
     try:
         data = request.get_json()
         entryAdminAddUserSchema = EntryAdminAddUserSchema()
-        entry_data = entryAdminAddUserSchema.load(data)
+        entry_data = entryAdminAddUserSchema.load(
+            data)
 
-        lottery = Lottery.query.get_or_404(lottery_id)
-        if lottery.status in [Status.TERMINE, Status.SIMULATION_TERMINE]:
+        lottery = Lottery.query.get_or_404(
+            lottery_id)
+        if lottery.status in [
+                Status.TERMINE, Status.SIMULATION_TERMINE]:
             return jsonify(
                 {"message": "Le tirage est déjà terminé.", "errors": True}), 403
 
-        user = User.query.filter_by(email=entry_data['email']).first()
+        user = User.query.filter_by(
+            email=entry_data['email']).first()
         if not user:
             return jsonify(
                 {"errors": True, "message": "Utilisateur non trouvé avec cet email."}), 404
@@ -491,30 +572,44 @@ def manage_particiants_add(lottery_id):
             {"errors": True, "message": "Une erreur est survenue", "details": str(e)}), 500
 
 
-@admin_bp.route('/lottery/validate/<int:lottery_id>', methods=['POST'])
+@admin_bp.route('/lottery/validate/<int:lottery_id>',
+                methods=['POST'])
 @jwt_required()
 @admin_role_required
 def validate_lottery(lottery_id):
     try:
-        lottery = Lottery.query.filter_by(id=lottery_id).one_or_none()
+        lottery = Lottery.query.filter_by(
+            id=lottery_id).one_or_none()
 
         if not lottery:
             return jsonify(
                 {"errors": True, "message": "Tirage non trouvé."}), 404
 
-        # Gestion des statuts EN_VALIDATION et SIMULATION
-        if lottery.status == Status.EN_VALIDATION:
-            lottery.status = Status.TERMINE
-            db.session.commit()
-            return jsonify({
-                "message": f"Le tirage {lottery.name} a été validé et terminé."
-            }), 200
+        if lottery.status == Status.EN_VALIDATION or lottery.status == Status.SIMULATION:
+            winning_numbers = generate_wining_numbers()
+            lucky_numbers = generate_luck_numbers()
 
-        elif lottery.status == Status.SIMULATION:
-            lottery.status = Status.SIMULATION_TERMINE
+            lottery_result = LotteryResult(
+                lottery_id=lottery_id,
+                winning_numbers=",".join(
+                    map(str, winning_numbers)),
+                winning_lucky_numbers=",".join(
+                    map(str, lucky_numbers))
+            )
+            db.session.add(
+                lottery_result)
+
+            if lottery.status == Status.EN_VALIDATION:
+                lottery.status = Status.TERMINE
+            elif lottery.status == Status.SIMULATION:
+                lottery.status = Status.SIMULATION_TERMINE
+
             db.session.commit()
+
             return jsonify({
-                "message": f"Le tirage fictif {lottery.name} a été validé et la simulation est terminée."
+                "message": f"Le tirage {lottery.name} a été validé.",
+                "winning_numbers": winning_numbers,
+                "lucky_numbers": lucky_numbers
             }), 200
 
         else:
@@ -531,15 +626,58 @@ def validate_lottery(lottery_id):
         }), 500
 
 
-@admin_bp.route('/populate-fake-users/<int:lottery_id>', methods=['POST'])
+@admin_bp.route('/lottery/results/<int:lottery_id>',
+                methods=['GET'])
+@jwt_required()
+@admin_role_required
+def get_lottery_results(lottery_id):
+    try:
+        lottery = Lottery.query.filter_by(
+            id=lottery_id).one_or_none()
+
+        if not lottery:
+            return jsonify({
+                "errors": True,
+                "message": "Tirage non trouvé."
+            }), 404
+
+        lottery_result = LotteryResult.query.filter_by(
+            lottery_id=lottery_id).one_or_none()
+
+        if not lottery_result:
+            return jsonify({
+                "errors": True,
+                "message": "Aucun résultat trouvé pour ce tirage."
+            }), 404
+
+        return jsonify({
+            "lottery_name": lottery.name,
+            "winning_numbers": lottery_result.winning_numbers,
+            "lucky_numbers": lottery_result.winning_lucky_numbers
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "errors": True,
+            "message": "Une erreur est survenue lors de la récupération des résultats du tirage.",
+            "details": str(e)
+        }), 500
+
+
+@admin_bp.route('/populate-fake-users/<int:lottery_id>',
+                methods=['POST'])
 @jwt_required()
 @admin_role_required
 def populate_fake_users(lottery_id):
     try:
-        lottery = Lottery.query.get_or_404(lottery_id)
+        lottery = Lottery.query.get_or_404(
+            lottery_id)
 
-        # Vérification du statut du tirage (simulation ou en cours)
-        if lottery.status not in [Status.SIMULATION, Status.EN_COUR]:
+        # Vérification du statut du
+        # tirage (simulation ou en
+        # cours)
+        if lottery.status not in [
+                Status.SIMULATION, Status.EN_COUR]:
             return jsonify({
                 "errors": True,
                 "message": "Ce tirage n'est ni en simulation ni en cours."
@@ -579,7 +717,8 @@ def populate_fake_users(lottery_id):
         }), 500
 
 
-@admin_bp.route('/logout', methods=['POST'])
+@admin_bp.route('/logout',
+                methods=['POST'])
 @jwt_required()
 @admin_role_required
 def logout_admin():
@@ -587,7 +726,8 @@ def logout_admin():
         jti = get_jwt()["jti"]
         user_id = get_jwt_identity()
         revoke_token(jti, user_id)
-        return jsonify({"message": "Déconnexion réussie."}), 200
+        return jsonify(
+            {"message": "Déconnexion réussie."}), 200
     except Exception as e:
         return jsonify({
             "errors": True,
