@@ -13,7 +13,7 @@ class LotteryWinerSchema(Schema):
     rank = fields.Int(required=True)
     name = fields.Str(required=True)
     score = fields.Int(required=True)
-    winnings = fields.Int(required=True)
+    winnings = fields.Float(required=True)
 
     class Meta:
         fields = ("rank", "name", "score", "winnings")

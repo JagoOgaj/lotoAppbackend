@@ -766,31 +766,43 @@ def lottery_rank(lottery_id):
                 404,
             )
         schema = LotteryWinerSchema(many=True)
+        schemaCurrentUser = LotteryWinerSchema()
         results = []
+
+        current_user_id = get_jwt_identity()
+
+        results = []
+        user_result = None
+        validated_user_results = {}
+
         for ranking in rankings:
             user = (
                 db.session.query(User)
                 .filter_by(id=ranking.player_id)
                 .one_or_none()
             )
-            if user is None:
-                name = "Inconnu"
-            name = user.full_name
-            results.append(
-                {
-                    "name": name,
-                    "rank": ranking.rank,
-                    "score": ranking.score,
-                    "winnings": ranking.winnings,
-                }
-            )
+            name = user.full_name if user else "Unknown"
+
+            result_data = {
+                "name": name,
+                "rank": ranking.rank,
+                "score": ranking.score,
+                "winnings": ranking.winnings,
+            }
+
+            results.append(result_data)
+
+            if ranking.player_id == current_user_id:
+                user_result = result_data
 
         validated_results = schema.dump(results)
-
+        if user_result is not None:
+            validated_user_results = schemaCurrentUser.dump(user_result)
         return jsonify(
             {
                 "message": "Rankings retrieved successfully",
                 "data": validated_results,
+                "currentUser": validated_user_results,
             }
         )
 
@@ -800,17 +812,6 @@ def lottery_rank(lottery_id):
                 {
                     "errors": True,
                     "message": "An error occurred during the draw validation.",
-                    "details": str(e),
-                }
-            ),
-            500,
-        )
-    except Exception as e:
-        return (
-            jsonify(
-                {
-                    "errors": True,
-                    "message": "Une erreurs est survenue",
                     "details": str(e),
                 }
             ),
