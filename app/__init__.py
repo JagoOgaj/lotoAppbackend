@@ -11,8 +11,7 @@ def create_app() -> Flask:
     app.config.from_object(Config)
 
     # Init Cors
-    CORS(app, resources={
-         r"/*": {"origins": "*"}})
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     # Init Extension
     db.init_app(app)
@@ -20,11 +19,8 @@ def create_app() -> Flask:
     ma.init_app(app)
 
     # Init Blueprint
-    app.register_blueprint(
-        user_bp, url_prefix='/user')
-    app.register_blueprint(
-        admin_bp, url_prefix='/admin')
-    app.register_blueprint(
-        auth_bp, url_prefix='/auth')
+    app.register_blueprint(user_bp, url_prefix="/user")
+    app.register_blueprint(admin_bp, url_prefix="/admin")
+    app.register_blueprint(auth_bp, url_prefix="/auth")
 
     return app

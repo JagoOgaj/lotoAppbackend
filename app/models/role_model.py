@@ -4,16 +4,9 @@ from app.extensions import db
 
 
 class Role(db.Model):
-    __tablename__ = 'roles'
+    __tablename__ = "roles"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        autoincrement=True)
-    role_name = Column(
-        String,
-        unique=True,
-        nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    role_name = Column(String, unique=True, nullable=False)
 
-    users = relationship(
-        "User", back_populates="role")
+    users = relationship("User", back_populates="role")

@@ -6,9 +6,9 @@ from sqlalchemy.orm import declarative_base
 
 
 Base = declarative_base()
-db: SQLAlchemy = SQLAlchemy(
-    model_class=Base)
+db: SQLAlchemy = SQLAlchemy(model_class=Base)
 ma: Marshmallow = Marshmallow()
 jwt: JWTManager = JWTManager()
 pwd_context: CryptContext = CryptContext(
-    schemes=["pbkdf2_sha256"], deprecated="auto")
+    schemes=["pbkdf2_sha256"], deprecated="auto"
+)

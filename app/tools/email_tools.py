@@ -7,7 +7,7 @@ import smtplib
 def email_sender(receiver):
     app_mail = Config.MAIL_APP
     app_mail_password = Config.APP_EMAIL_PASSWORD
-    subject = 'Un nouveau tirage est disponible'
+    subject = "Un nouveau tirage est disponible"
     body = """
     Bonjour,
 
@@ -23,17 +23,12 @@ def email_sender(receiver):
     """
 
     em = EmailMessage()
-    em['From'] = app_mail
-    em['To'] = receiver
-    em['Subject'] = subject
+    em["From"] = app_mail
+    em["To"] = receiver
+    em["Subject"] = subject
     em.set_content(body)
     context = ssl.create_default_context()
 
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
-        smtp.login(
-            app_mail,
-            app_mail_password)
-        smtp.sendmail(
-            app_mail,
-            receiver,
-            em.as_string())
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as smtp:
+        smtp.login(app_mail, app_mail_password)
+        smtp.sendmail(app_mail, receiver, em.as_string())
