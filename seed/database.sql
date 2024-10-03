@@ -56,6 +56,16 @@ CREATE TABLE lottery_results (
     winning_lucky_numbers VARCHAR NOT NULL                      -- Numero chance gagnants
 );
 
+-- Table pour stocker les classements des loteries
+CREATE TABLE lottery_rankings (
+    id SERIAL PRIMARY KEY,                                                  -- Identifiant unique du classement
+    lottery_result_id INT REFERENCES lottery_results(id) ON DELETE CASCADE, -- Référence au résultat de la loterie
+    player_id INT REFERENCES users(id) ON DELETE CASCADE,                   -- Référence à l'utilisateur (joueur)
+    rank INT NOT NULL,                                                      -- Rang du joueur
+    score INT NOT NULL,                                                     -- Score du joueur
+    winnings FLOAT NOT NULL                                                 -- Montant gagné par le joueur
+);
+
 -- Table pour stocker les token d'authentification
 CREATE TABLE token_block_list (
     id SERIAL PRIMARY KEY,                                        -- Identifiant unique du token bloqué
