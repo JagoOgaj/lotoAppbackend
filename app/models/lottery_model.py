@@ -19,38 +19,58 @@ class Lottery(db.Model):
     _reward_price = Column("reward_price", Integer, nullable=False)
     _max_participants = Column("max_participants", Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(
-        DateTime, default=datetime.now, onupdate=datetime.now
-    )
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     entries = relationship("Entry", back_populates="lottery")
-    results = relationship(
-        "LotteryResult", back_populates="lottery", uselist=False
-    )
+    results = relationship("LotteryResult", back_populates="lottery", uselist=False)
 
     @property
     def name(self):
         return self._name
 
+    @name.setter
+    def name(self, value):
+        self._name = value
+
     @property
     def start_date(self):
         return self._start_date
+
+    @start_date.setter
+    def start_date(self, value):
+        self._start_date = value
 
     @property
     def end_date(self):
         return self._end_date
 
+    @end_date.setter
+    def end_date(self, value):
+        self._end_date = value
+
     @property
     def status(self):
         return self._status
+
+    @status.setter
+    def status(self, value):
+        self._status = value
 
     @property
     def reward_price(self):
         return self._reward_price
 
+    @reward_price.setter
+    def reward_price(self, value):
+        self._reward_price = value
+
     @property
     def max_participants(self):
         return self._max_participants
+
+    @max_participants.setter
+    def max_participants(self, value):
+        self._max_participants = value
 
     @property
     def participant_count(self):
@@ -58,7 +78,7 @@ class Lottery(db.Model):
 
     @hybrid_property
     def is_active(self):
-        if self._status == Status.SIMULATION:
+        if self._status == Status.SIMULATION.value:
             return False
         return self.start_date <= datetime.now() <= self.end_date
 

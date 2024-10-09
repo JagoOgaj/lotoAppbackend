@@ -37,13 +37,9 @@ class UserCreateSchema(Schema):
     @validates("email")
     def validate_email(self, value):
         if not value:
-            raise ValidationError(
-                "L'email est requis et ne peut pas être vide."
-            )
+            raise ValidationError("L'email est requis et ne peut pas être vide.")
 
-        if not re.match(
-            r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$", value
-        ):
+        if not re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$", value):
             raise ValidationError("Format d'email invalide.")
 
     @validates("password")
@@ -61,12 +57,8 @@ class UserCreateSchema(Schema):
                 "Le mot de passe doit contenir au moins une lettre majuscule."
             )
         if not any(char.isdigit() for char in value):
-            raise ValidationError(
-                "Le mot de passe doit contenir au moins un chiffre."
-            )
-        if not any(
-            char in "!@#$%^&*()_+-=[]{}|;:,.<>?/" for char in value
-        ):
+            raise ValidationError("Le mot de passe doit contenir au moins un chiffre.")
+        if not any(char in "!@#$%^&*()_+-=[]{}|;:,.<>?/" for char in value):
             raise ValidationError(
                 "Le mot de passe doit contenir au moins un caractère spécial."
             )
@@ -106,23 +98,17 @@ class UserUpdateSchema(Schema):
 
     @validates("first_name")
     def validate_first_name(self, value):
-        if (
-            value is not None
-        ):  # Vérifie uniquement si la valeur est fournie
+        if value is not None:  # Vérifie uniquement si la valeur est fournie
             if not value.strip():
                 raise ValidationError(
                     "Le prénom ne peut pas être vide ou composé uniquement d'espaces."
                 )
             if len(value) < 2:
-                raise ValidationError(
-                    "Le prénom doit avoir 2 character au minimum"
-                )
+                raise ValidationError("Le prénom doit avoir 2 character au minimum")
 
     @validates("last_name")
     def validate_last_name(self, value):
-        if (
-            value is not None
-        ):  # Vérifie uniquement si la valeur est fournie
+        if value is not None:  # Vérifie uniquement si la valeur est fournie
             if not value.strip():
                 raise ValidationError(
                     "Le nom ne peut pas être vide ou composé uniquement d'espaces."
@@ -152,12 +138,8 @@ class UserPasswordUpdateSchema(Schema):
                 "Le mot de passe doit contenir au moins une lettre majuscule."
             )
         if not any(char.isdigit() for char in value):
-            raise ValidationError(
-                "Le mot de passe doit contenir au moins un chiffre."
-            )
-        if not any(
-            char in "!@#$%^&*()_+-=[]{}|;:,.<>?/" for char in value
-        ):
+            raise ValidationError("Le mot de passe doit contenir au moins un chiffre.")
+        if not any(char in "!@#$%^&*()_+-=[]{}|;:,.<>?/" for char in value):
             raise ValidationError(
                 "Le mot de passe doit contenir au moins un caractère spécial."
             )
@@ -170,9 +152,7 @@ class UserLoginSchema(Schema):
     @validates("email")
     def validate_email(self, value):
         if not value:
-            raise ValidationError(
-                "L'email est requis et ne peut pas être vide."
-            )
+            raise ValidationError("L'email est requis et ne peut pas être vide.")
         email_regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
 
         if not re.match(email_regex, value):

@@ -9,6 +9,4 @@ Base = declarative_base()
 db: SQLAlchemy = SQLAlchemy(model_class=Base)
 ma: Marshmallow = Marshmallow()
 jwt: JWTManager = JWTManager()
-pwd_context: CryptContext = CryptContext(
-    schemes=["pbkdf2_sha256"], deprecated="auto"
-)
+pwd_context: CryptContext = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")

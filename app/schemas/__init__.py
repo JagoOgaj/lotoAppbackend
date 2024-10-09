@@ -23,3 +23,4 @@ from .user_schemas import (
     UserOverviewInfoSchema,
 )
 from .lotteryRanking_schema import LotteryRankingSchema
+from .contactUs_schema import ContactUsSchema

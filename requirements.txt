@@ -8,3 +8,4 @@ marshmallow-sqlalchemy
 passlib
 python-dotenv
 flask-cors
+faker

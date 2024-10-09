@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS lotteries CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS roles CASCADE;
 DROP TABLE IF EXISTS token_block_list CASCADE;
+DROP TABLE IF EXISTS lottery_rankings CASCADE;
 
 -- Table pour stocker les rôles
 CREATE TABLE roles (
@@ -29,8 +30,8 @@ CREATE TABLE users (
 CREATE TABLE lotteries (
     id SERIAL PRIMARY KEY,                                      -- Identifiant unique du tirage
     name VARCHAR NOT NULL,                                      -- Nom du tirage
-    start_date TIMESTAMP NOT NULL,                              -- Date et heure de début du tirage
-    end_date TIMESTAMP NOT NULL,                                -- Date et heure de fin du tirage
+    start_date TIMESTAMP,                                     -- Date et heure de début du tirage
+    end_date TIMESTAMP,                                        -- Date et heure de fin du tirage
     status VARCHAR NOT NULL,                                    -- Statut du tirage (upcoming, finished)
     reward_price INT NOT NULL,                                  -- Récompence du tirage
     max_participants INT NOT NULL,                              -- Nombre maximum de participants
@@ -79,3 +80,4 @@ CREATE TABLE token_block_list (
 -- Populate 
 INSERT INTO roles (id, role_name) VALUES (1, 'ADMIN');
 INSERT INTO roles (id, role_name) VALUES (2, 'USER');
+INSERT INTO roles (id, role_name) VALUES (3, 'FAKE');

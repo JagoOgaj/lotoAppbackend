@@ -15,7 +15,5 @@ class LotteryRanking(db.Model):
     score = Column(Integer, nullable=False)
     winnings = Column(Float, nullable=False)
 
-    lottery_result = relationship(
-        "LotteryResult", back_populates="rankings"
-    )
+    lottery_result = relationship("LotteryResult", back_populates="rankings")
     player = relationship("User")

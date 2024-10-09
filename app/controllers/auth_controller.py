@@ -21,28 +21,57 @@ auth_bp = Blueprint("auth", __name__)
 @auth_bp.route("/refresh", methods=["POST"])
 @jwt_required(refresh=True)
 def refresh():
-    user_id = get_jwt_identity()
-    access_token = create_access_token(identity=user_id)
-    add_token_to_database(access_token)
-    return jsonify({"access_token": access_token}), 201
+    try:
+        user_id = get_jwt_identity()
+        access_token = create_access_token(identity=user_id)
+        add_token_to_database(access_token)
+        return jsonify({"access_token": access_token}), 201
+    except Exception as e:
+        return (
+            jsonify(
+                {
+                    "message": "une erreur est survenu dans le refresh du token",
+                    "errors": True,
+                    "details": str(e),
+                }
+            ),
+            422,
+        )
 
 
 @auth_bp.route("/revoke_access", methods=["DELETE"])
 @jwt_required()
 def revoke_access_token():
-    jti = get_jwt()["jti"]
-    user_id = get_jwt_identity()
-    revoke_token(jti, user_id)
-    return jsonify({"message": "Token revoked"}), 200
+    try:
+        jti = get_jwt()["jti"]
+        user_id = get_jwt_identity()
+        revoke_token(jti, user_id)
+        return jsonify({"message": "Token revoked"}), 200
+    except Exception as e:
+        return (
+            jsonify(
+                {"message": "Failed to revoke token", "errors": True, "details": str(e)}
+            ),
+            422,
+        )
 
 
 @auth_bp.route("/revoke_refresh", methods=["DELETE"])
 @jwt_required(refresh=True)
 def revoke_refresh_token():
-    jti = get_jwt()["jti"]
-    user_id = get_jwt_identity()
-    revoke_token(jti, user_id)
-    return jsonify({"message": "Refresh token revoked"}), 200
+    try:
+        jti = get_jwt()["jti"]
+        user_id = get_jwt_identity()
+        revoke_token(jti, user_id)
+        return jsonify({"message": "Refresh token revoked"}), 200
+    except Exception as e:
+        return jsonify(
+            {
+                "message": "Une erreur est survnue dans le revoke du token",
+                "errors": True,
+                "details": str(e),
+            }
+        )
 
 
 @jwt.token_in_blocklist_loader
@@ -56,12 +85,21 @@ def check_if_token_revoked(jwt_headers, jwt_payload):
 @auth_bp.route("/get-role", methods=["GET"])
 @jwt_required()
 def get_role():
-    user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    try:
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
 
-    if not user:
-        return jsonify({"message": "User not found"}), 404
-    return jsonify({"role": user.role_name}), 200
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+        return jsonify({"role": user.role_name}), 200
+    except Exception as e:
+        return jsonify(
+            {
+                "message": "une erreur est survenue dans la récupération du role",
+                "errors": True,
+                "details": str(e),
+            }
+        )
 
 
 @jwt.user_lookup_loader

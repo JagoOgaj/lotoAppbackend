@@ -22,14 +22,10 @@ class User(db.Model):
     _last_name = Column("last_name", String, nullable=False)
     _email = Column("email", String, unique=True, nullable=False)
     _password_hash = Column("password_hash", String, nullable=False)
-    _role_id = Column(
-        "role_id", Integer, ForeignKey("roles.id"), default=Roles.USER
-    )
+    _role_id = Column("role_id", Integer, ForeignKey("roles.id"), default=2)
     _notification = Column("notification", Boolean, default=False)
     created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(
-        DateTime, default=datetime.now, onupdate=datetime.now
-    )
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     role = relationship("Role", back_populates="users")
     entries = relationship("Entry", back_populates="user")
@@ -87,11 +83,11 @@ class User(db.Model):
 
     @hybrid_property
     def is_admin(self):
-        return self.role.role_name == Roles.ADMIN
+        return self.role.role_name == Roles.ADMIN.value
 
     @is_admin.expression
     def is_admin(cls):
-        return cls.role.has(role_name=Roles.ADMIN)
+        return cls.role.has(role_name=Roles.ADMIN.value)
 
     @hybrid_property
     def password_hash(self):

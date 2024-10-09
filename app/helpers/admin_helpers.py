@@ -3,7 +3,7 @@ from flask_jwt_extended import get_jwt_identity
 from flask import jsonify
 from app.models import User, Role
 from app.tools.roles_tools import Roles
-from app.tools import email_sender
+from app.tools import email_sender_new_tirage
 
 
 def admin_role_required(func):
@@ -31,14 +31,12 @@ def send_email_to_users():
     try:
         users = (
             User.query.join(Role)
-            .filter(Role.role_name == Roles.USER, User.notification)
+            .filter(Role.role_name == Roles.USER.value, User.notification)
             .all()
         )
         if not users:
-            raise Exception("Aucun utilisateur trouver")
+            return
         for user in users:
-            email_sender(user.email)
+            email_sender_new_tirage(user.email)
     except Exception as e:
-        raise Exception(
-            "Une erreur est survenue lors de l'envoie des mails"
-        )
+        raise Exception(f"Une erreur est survenue lors de l'envoie des mails {str(e)}")

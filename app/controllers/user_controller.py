@@ -39,20 +39,16 @@ def login_user():
         email = data.get("email")
         password = data.get("password")
 
-        user = User.query.filter_by(_email=email).one_or_none()
+        user = User.query.filter_by(_email=email, _role_id=2).one_or_none()
         if not user:
             return (
-                jsonify(
-                    {"message": "Aucun utilisateur trouvé", "errors": True}
-                ),
+                jsonify({"message": "Aucun utilisateur trouvé", "errors": True}),
                 404,
             )
 
         if not pwd_context.verify(password, user.password_hash):
             return (
-                jsonify(
-                    {"message": "Mot de passe incorrect", "errors": True}
-                ),
+                jsonify({"message": "Mot de passe incorrect", "errors": True}),
                 401,
             )
 
@@ -129,6 +125,9 @@ def register_user():
         access_token = create_access_token(identity=new_user.id)
         refresh_token = create_refresh_token(identity=new_user.id)
 
+        add_token_to_database(access_token)
+        add_token_to_database(refresh_token)
+
         return (
             jsonify(
                 {
@@ -172,9 +171,7 @@ def account_info():
         user = get_current_user()
         if not user:
             return (
-                jsonify(
-                    {"message": "Aucun utilisateur trouvé", "errors": True}
-                ),
+                jsonify({"message": "Aucun utilisateur trouvé", "errors": True}),
                 404,
             )
 
@@ -221,9 +218,7 @@ def update_info():
 
         if not user:
             return (
-                jsonify(
-                    {"message": "Aucun utilisateur trouvé", "errors": True}
-                ),
+                jsonify({"message": "Aucun utilisateur trouvé", "errors": True}),
                 404,
             )
 
@@ -243,11 +238,7 @@ def update_info():
         db.session.commit()
 
         return (
-            jsonify(
-                {
-                    "message": "Vos informations ont été mises à jour avec succès."
-                }
-            ),
+            jsonify({"message": "Vos informations ont été mises à jour avec succès."}),
             200,
         )
     except ValidationError as err:
@@ -282,34 +273,26 @@ def update_password():
 
         if not user:
             return (
-                jsonify(
-                    {"message": "Aucun utilisateur trouvé", "errors": True}
-                ),
+                jsonify({"message": "Aucun utilisateur trouvé", "errors": True}),
                 404,
             )
 
         data = request.get_json()
         userUpdatePassword = UserPasswordUpdateSchema()
         user_data = userUpdatePassword.load(data)
-        if not pwd_context.verify(
-            user_data["old_password"], user.password_hash
-        ):
+        if not pwd_context.verify(user_data["old_password"], user.password_hash):
             return (
                 jsonify(
                     {
                         "message": "L'ancien mot de passe est incorrect.",
                         "errors": True,
-                        "details": {
-                            "password": "L'ancien mot de passe est incorrect."
-                        },
+                        "details": {"password": "L'ancien mot de passe est incorrect."},
                     }
                 ),
                 400,
             )
 
-        if pwd_context.verify(
-            user_data["new_password"], user.password_hash
-        ):
+        if pwd_context.verify(user_data["new_password"], user.password_hash):
             return (
                 jsonify(
                     {
@@ -326,11 +309,7 @@ def update_password():
         user.password_hash = user_data["new_password"]
         db.session.commit()
         return (
-            jsonify(
-                {
-                    "message": "Votre mot de passe à été mises à jour avec succès."
-                }
-            ),
+            jsonify({"message": "Votre mot de passe à été mises à jour avec succès."}),
             200,
         )
 
@@ -340,11 +319,7 @@ def update_password():
                 {
                     "errors": True,
                     "message": "Erreur de mise à jour de votre mot de passe",
-                    "details": {
-                        "new_password": err.messages.get(
-                            "new_password", []
-                        )
-                    },
+                    "details": {"new_password": err.messages.get("new_password", [])},
                 }
             ),
             400,
@@ -390,9 +365,7 @@ def lottery_registry():
         user_id = get_jwt_identity()
         if not user_id:
             return (
-                jsonify(
-                    {"message": "Aucun utilisateur trouvé", "errors": True}
-                ),
+                jsonify({"message": "Aucun utilisateur trouvé", "errors": True}),
                 404,
             )
 
@@ -403,13 +376,11 @@ def lottery_registry():
         lottery = Lottery.query.get(entryResgistryData["lottery_id"])
         if not lottery:
             return (
-                jsonify(
-                    {"message": "Loterie non trouvée.", "errors": True}
-                ),
+                jsonify({"message": "Loterie non trouvée.", "errors": True}),
                 404,
             )
 
-        if lottery.status in [Status.TERMINE] or not lottery.is_active:
+        if lottery.status in [Status.TERMINE.value] or lottery.is_active:
             return (
                 jsonify(
                     {
@@ -525,9 +496,7 @@ def lottery_history_user():
         user_id = get_jwt_identity()
         if not user_id:
             return (
-                jsonify(
-                    {"message": "Aucun utilisateur trouvé", "errors": True}
-                ),
+                jsonify({"message": "Aucun utilisateur trouvé", "errors": True}),
                 404,
             )
 
@@ -541,7 +510,7 @@ def lottery_history_user():
                         "emptyEntries": True,
                     }
                 ),
-                404,
+                400,
             )
 
         lotteries = []
@@ -550,31 +519,26 @@ def lottery_history_user():
         for entry in user_entries:
             lottery = Lottery.query.get(entry.lottery_id)
 
-            if (
-                current_date >= lottery.end_date
-                and lottery.status
-                not in [
-                    Status.TERMINE,
-                    Status.EN_VALIDATION,
-                ]
-            ):
-                lottery.status = Status.EN_VALIDATION
+            if current_date >= lottery.end_date and lottery.status not in [
+                Status.TERMINE.value,
+                Status.EN_VALIDATION.value,
+            ]:
+                lottery.status = Status.EN_VALIDATION.value
                 db.session.commit()
 
             # Formater la date pour
             # l'affichage
-            date_participation = entry.date.strftime("%d %B %Y")
+            date_participation = lottery.start_date.strftime("%d %B %Y")
             date_tirage = lottery.end_date.strftime("%d %B %Y")
 
             lotteries.append(
                 {
                     "id": lottery.id,
+                    "name": lottery.name,
                     "date": date_participation,
                     "statut": lottery.status,
-                    "numerosJoues": ", ".join(map(str, entry.numbers)),
-                    "numerosChance": ", ".join(
-                        map(str, entry.chance_numbers)
-                    ),
+                    "numerosJoues": entry.numbers,
+                    "numerosChance": entry.lucky_numbers,
                     "dateTirage": date_tirage,
                 }
             )
@@ -624,14 +588,12 @@ def get_current_lottery():
         user = get_current_user()
         if not user:
             return (
-                jsonify(
-                    {"message": "Aucun utilisateur trouvé", "errors": True}
-                ),
+                jsonify({"message": "Aucun utilisateur trouvé", "errors": True}),
                 404,
             )
 
         current_lottery = Lottery.query.filter_by(
-            status=Status.EN_COUR
+            _status=Status.EN_COUR.value
         ).one_or_none()
 
         if not current_lottery:
@@ -642,7 +604,7 @@ def get_current_lottery():
                         "message": "Aucun tirage en cours trouvé.",
                     }
                 ),
-                404,
+                400,
             )
         is_registered = Entry.query.filter_by(
             user_id=user.id, lottery_id=current_lottery.id
@@ -683,23 +645,38 @@ def lottery_details(lottery_id):
         lottery = Lottery.query.filter_by(id=lottery_id).one_or_none()
         if lottery is None:
             return (
-                jsonify(
-                    {"errors": True, "message": "Loterie non trouvée."}
-                ),
+                jsonify({"errors": True, "message": "Loterie non trouvée."}),
                 404,
             )
 
         current_date = datetime.utcnow()
         if current_date >= lottery.end_date and lottery.status not in [
-            Status.TERMINE,
-            Status.EN_VALIDATION,
+            Status.TERMINE.value,
+            Status.EN_VALIDATION.value,
         ]:
-            lottery.status = Status.EN_VALIDATION
+            lottery.status = Status.EN_VALIDATION.value
             db.session.commit()
         lotteryOverviewschema = LotteryOverviewSchema()
         result = lotteryOverviewschema.dump(lottery)
+        lottery_result = LotteryResult.query.filter_by(
+            lottery_id=lottery_id
+        ).one_or_none()
+        winning_numbers = ""
+        lucky_numbers = ""
+        if lottery_result:
+            winning_numbers = lottery_result.winning_numbers
+            lucky_numbers = lottery_result.winning_lucky_numbers
         return (
-            jsonify({"message": "Details du tirage", "data": result}),
+            jsonify(
+                {
+                    "message": "Details du tirage",
+                    "data": result,
+                    "numbers": {
+                        "winning_numbers": winning_numbers,
+                        "lucky_numbers": lucky_numbers,
+                    },
+                }
+            ),
             200,
         )
 
@@ -735,9 +712,7 @@ def lottery_rank(lottery_id):
 
         if not lottery:
             return (
-                jsonify(
-                    {"errors": True, "message": "Lottery draw not found."}
-                ),
+                jsonify({"errors": True, "message": "Lottery draw not found."}),
                 404,
             )
 
@@ -776,11 +751,7 @@ def lottery_rank(lottery_id):
         validated_user_results = {}
 
         for ranking in rankings:
-            user = (
-                db.session.query(User)
-                .filter_by(id=ranking.player_id)
-                .one_or_none()
-            )
+            user = db.session.query(User).filter_by(id=ranking.player_id).one_or_none()
             name = user.full_name if user else "Unknown"
 
             result_data = {

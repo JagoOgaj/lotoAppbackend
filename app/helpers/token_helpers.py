@@ -22,9 +22,7 @@ def add_token_to_database(encoded_token):
 
 def revoke_token(token_jti, user_id):
     try:
-        token = TokenBlockList.query.filter_by(
-            jti=token_jti, user_id=user_id
-        ).one()
+        token = TokenBlockList.query.filter_by(jti=token_jti, user_id=user_id).one()
         token.revoked_at = datetime.utcnow()
         db.session.commit()
     except NoResultFound:
@@ -35,9 +33,7 @@ def is_token_revoked(jwt_payload):
     jti = jwt_payload["jti"]
     user_id = jwt_payload[app.config.get("JWT_IDENTITY_CLAIM")]
     try:
-        token = TokenBlockList.query.filter_by(
-            jti=jti, user_id=user_id
-        ).one()
+        token = TokenBlockList.query.filter_by(jti=jti, user_id=user_id).one()
         return token.revoked_at is not None
     except NoResultFound:
         raise Exception(f"Impossible de trouver le token {jti}")

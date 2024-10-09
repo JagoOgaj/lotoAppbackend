@@ -53,7 +53,7 @@ def structure_scores(participants, draw_numbers, draw_stars):
 
         nb_tied = len(players)
 
-        final_ranking[current_rank] = players
+        final_ranking[current_rank] = [players, score]
         total_ranked += nb_tied
 
         current_rank += nb_tied
@@ -67,7 +67,7 @@ def compute_gain(scores_dict, reward_price):
     ranks = sorted(map(int, scores_dict.keys()))
 
     for rank in ranks:
-        players = scores_dict[rank]
+        players, score = scores_dict[rank]
         gap_between_next_rank = len(players)
 
         if gap_between_next_rank == 1:

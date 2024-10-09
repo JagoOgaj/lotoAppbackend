@@ -1,7 +1,11 @@
 # app/tools/__init__.py
 from .roles_tools import Roles
 from .status_tools import Status
-from .email_tools import email_sender
+from .email_tools import (
+    email_sender_new_tirage,
+    email_sender_contact_us,
+    email_sender_results_available,
+)
 from .rank_tools import (
     compute_gain,
     distribute_remainder,

@@ -1,0 +1,35 @@
+{
+  // Utilisez IntelliSense pour en savoir plus sur les attributs possibles.
+  // Pointez pour afficher la description des attributs existants.
+  // Pour plus d'informations, visitez : https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python Debugger: Flask",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "flask",
+      "env": {
+        "FLASK_APP": "main.py",
+        "FLASK_ENV": "development",
+        "FLASK_DEBUG": "1"
+      },
+      "args": [
+        "run",
+        "--no-debugger", // Si vous souhaitez déboguer via VS Code, il est recommandé de ne pas utiliser cette option.
+        "--no-reload", // Cela empêche le rechargement automatique. Laissez cette option si vous préférez déboguer sans rechargement automatique.
+        "--port",
+        "8080"
+      ],
+      "jinja": true, // Assurez-vous que le support Jinja est activé pour le débogage des templates
+      "justMyCode": true // Cela vous permet de vous concentrer sur votre code sans être distrait par les bibliothèques tierces
+    },
+    {
+      "name": "Débogueur Python : Fichier actuel",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal"
+    }
+  ]
+}

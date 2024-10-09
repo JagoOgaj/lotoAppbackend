@@ -1,6 +1,5 @@
 from flask import jsonify
 import random
-import string
 from app.schemas import LotteryWinerSchema
 from app.tools import (
     distribute_remainder,
@@ -8,22 +7,19 @@ from app.tools import (
     structure_scores,
     calculate_jaccard_similarity,
 )
-from app import db
 from app.models import User
+from faker import Faker
+
+fake = Faker()
 
 
-def get_formatted_results(
-    participants, draw_numbers, draw_stars, reward_price
-):
+def get_formatted_results(participants, draw_numbers, draw_stars, reward_price, db):
     try:
-        ranking_results = structure_scores(
-            participants, draw_numbers, draw_stars
-        )
+        ranking_results = structure_scores(participants, draw_numbers, draw_stars)
 
         player_winnings, total_sum, remainder = compute_gain(
             ranking_results, reward_price
         )
-        print(total_sum)
 
         if remainder > 0:
             distribute_remainder(player_winnings, remainder)
@@ -32,46 +28,16 @@ def get_formatted_results(
 
         schema = LotteryWinerSchema(many=True)
 
-        for rank, players in ranking_results.items():
-            for player_id in players:
+        for rank, (players_ids, score) in ranking_results.items():
+            for player_id in players_ids:
                 winnings = player_winnings.get(player_id, 0)
 
-                user = (
-                    db.session.query(User)
-                    .filter_by(id=player_id)
-                    .one_or_none()
-                )
+                user = db.session.query(User).filter_by(id=player_id).one_or_none()
                 if user is None:
                     raise Exception(
                         "Une erreur est survenue lors de la récupération de l'utilisateur"
                     )
-
-                score = (
-                    int(
-                        calculate_jaccard_similarity(
-                            draw_numbers,
-                            draw_stars,
-                            set(
-                                map(
-                                    int,
-                                    participants[
-                                        player_id - 1
-                                    ].numbers.split(","),
-                                )
-                            ),
-                            set(
-                                map(
-                                    int,
-                                    participants[
-                                        player_id - 1
-                                    ].lucky_numbers.split(","),
-                                )
-                            ),
-                        )
-                    )
-                    if player_id in player_winnings
-                    else 0
-                )
+                score = score
 
                 formatted_results.append(
                     {
@@ -86,15 +52,13 @@ def get_formatted_results(
         validated_results = schema.dump(formatted_results)
 
         return validated_results
-    except Exception:
-        raise Exception("Une erreur est survenue")
+    except Exception as e:
+        raise Exception(str(e))
 
 
 def generate_random_user():
-    fake_name = "".join(
-        random.choices(string.ascii_uppercase + string.digits, k=6)
-    )
-    fake_email = fake_name.lower() + "@example.com"
+    fake_name = fake.name()
+    fake_email = fake.email()
     numbers = ",".join([str(random.randint(1, 49)) for _ in range(5)])
     lucky_numbers = ",".join([str(random.randint(1, 9)) for _ in range(2)])
     return fake_name, fake_email, numbers, lucky_numbers

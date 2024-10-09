@@ -25,20 +25,14 @@ class LotteryCreateSchema(Schema):
     @validates("status")
     def validate_status(self, value):
         if value not in Status:
-            raise ValidationError("Mauvais statut du tirage")
-        if value != Status.EN_COUR:
-            raise ValidationError("Le status doit etre 'en cour'")
+            raise ValidationError("Le tirage doit avoir un status")
 
     @validates("max_participants")
     def validate_max_participants(self, value):
         if not value:
-            raise ValidationError(
-                "Le nombre max de participants est requis"
-            )
+            raise ValidationError("Le nombre max de participants est requis")
         if not isinstance(value, int):
-            raise ValidationError(
-                "Le nombre max de participants doit etre un nombre"
-            )
+            raise ValidationError("Le nombre max de participants doit etre un nombre")
 
     @validates("reward_price")
     def validate_reward_price(self, value):
@@ -51,57 +45,47 @@ class LotteryCreateSchema(Schema):
                 "La récompence ne doit pas etre superieur ou egal a 0"
             )
 
-    @validates_schema
-    def validate_date(self, data, **kwargs):
-        if datetime(data["start_date"]) >= datetime(data["end_date"]):
-            raise ValidationError(
-                "La fin du tirage ne dois pas etre avant le début du tirage"
-            )
-
-    class Meta:
-        fields = (
-            "name",
-            "start_date",
-            "end_date",
-            "status",
-            "max_participants",
-        )
-
 
 class LotteryUpdateSchema(Schema):
-    name = fields.Str()
-    start_date = fields.Str()
-    end_date = fields.Str()
-    status = fields.Str()
-    max_participants = fields.Int()
+    name = fields.Str(required=False)
+    reward_price = fields.Int(required=False)
+    start_date = fields.Str(required=False)
+    end_date = fields.Str(required=False)
+    status = fields.Str(required=False)
+    max_participants = fields.Int(required=False)
 
     @validates("name")
     def validate_name(self, value):
-        if not value:
-            raise ValidationError("Le nom du tirage est requis")
+        if value:
+            if len(value) < 2:
+                raise ValidationError("Le nom du tirage doit etre de 2 charectere min")
 
     @validates("status")
     def validate_status(self, value):
-        if value not in Status:
-            raise ValidationError("Mauvais statut du tirage")
+        if value:
+            if value not in Status:
+                raise ValidationError("Mauvais statut du tirage")
 
     @validates("max_participants")
     def validate_max_participants(self, value):
-        if not value:
-            raise ValidationError(
-                "Le nombre max de participants est requis"
-            )
-        if not isinstance(value, int):
-            raise ValidationError(
-                "Le nombre max de participants doit etre un nombre"
-            )
+        if value:
+            if not isinstance(value, int):
+                raise ValidationError(
+                    "Le nombre max de participants doit etre un nombre"
+                )
 
-    @validates_schema
-    def validate_date(self, data, **kwargs):
-        if datetime(data["start_date"]) >= datetime(data["end_date"]):
-            raise ValidationError(
-                "La fin du tirage ne dois pas etre avant le début du tirage"
-            )
+            if value <= 0:
+                raise ValidationError(
+                    "Le nombre max de participants doit etre superieur a 0"
+                )
+
+    @validates("reward_price")
+    def validate_reward_price(self, value):
+        if value:
+            if not isinstance(value, int):
+                raise ValidationError("La recompense doit etre un nombre")
+            if value <= 0:
+                raise ValidationError("La recompense doit etre superieur a 0")
 
     class Meta:
         fileds = (
@@ -115,6 +99,7 @@ class LotteryUpdateSchema(Schema):
 
 class LotteryHistorySchema(Schema):
     id = fields.Int(required=True)
+    name = fields.Str(required=True)
     date = fields.Str(required=True)
     statut = fields.Str(required=True)
     numerosJoues = fields.Str(required=True)
@@ -134,6 +119,7 @@ class LotteryOverviewSchema(Schema):
 
     class Meta:
         fields = (
+            "id",
             "name",
             "start_date",
             "end_date",

@@ -1,7 +1,7 @@
 # app/__init__.py
 from flask import Flask
 from app.config import Config
-from app.controllers import user_bp, admin_bp, auth_bp
+from app.controllers import user_bp, admin_bp, auth_bp, contact_bp
 from app.extensions import db, jwt, ma
 from flask_cors import CORS
 
@@ -22,5 +22,6 @@ def create_app() -> Flask:
     app.register_blueprint(user_bp, url_prefix="/user")
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp, url_prefix="/auth")
+    app.register_blueprint(contact_bp, url_prefix="/contact")
 
     return app
