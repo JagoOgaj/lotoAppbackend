@@ -5,6 +5,15 @@ import smtplib
 
 
 def email_sender_new_tirage(receiver):
+    """
+    Envoie un email informant de la disponibilité d'un nouveau tirage.
+
+    Paramètres:
+        receiver (str): L'adresse email du destinataire.
+
+    Lève:
+        Exception: En cas d'échec de l'envoi de l'email.
+    """
     app_mail = Config.MAIL_APP
     app_mail_password = Config.APP_EMAIL_PASSWORD
     subject = "Un nouveau tirage est disponible"
@@ -35,6 +44,16 @@ def email_sender_new_tirage(receiver):
 
 
 def email_sender_results_available(receiver, tirage_name):
+    """
+    Envoie un email informant de la disponibilité des résultats d'un tirage.
+
+    Paramètres:
+        receiver (str): L'adresse email du destinataire.
+        tirage_name (str): Le nom du tirage dont les résultats sont disponibles.
+
+    Lève:
+        Exception: En cas d'échec de l'envoi de l'email.
+    """
     app_mail = Config.MAIL_APP
     app_mail_password = Config.APP_EMAIL_PASSWORD
     subject = "Les résultats du tirage sont disponibles"
@@ -63,6 +82,16 @@ def email_sender_results_available(receiver, tirage_name):
 
 
 def email_sender_contact_us(user_email, user_message):
+    """
+    Envoie un email à l'adresse de l'application contenant un message d'un utilisateur.
+
+    Paramètres:
+        user_email (str): L'email de l'utilisateur qui a contacté.
+        user_message (str): Le message de l'utilisateur.
+
+    Lève:
+        Exception: En cas d'échec de l'envoi de l'email.
+    """
     app_mail = Config.MAIL_APP
     app_mail_password = Config.APP_EMAIL_PASSWORD
     subject = "Nouveau message de Contactez-nous"

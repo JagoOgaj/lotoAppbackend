@@ -9,3 +9,4 @@ passlib
 python-dotenv
 flask-cors
 faker
+pytest

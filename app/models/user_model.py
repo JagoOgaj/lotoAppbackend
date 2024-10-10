@@ -15,6 +15,42 @@ import re
 
 
 class User(db.Model):
+    """
+    Représente un utilisateur du système.
+
+    Cette classe correspond à la table 'users' et est utilisée pour gérer les
+    informations des utilisateurs, y compris leur rôle, leurs informations
+    personnelles, et leurs préférences de notification.
+
+    Attributes:
+        id (int): Identifiant unique de l'utilisateur (clé primaire).
+        _first_name (str): Prénom de l'utilisateur.
+        _last_name (str): Nom de famille de l'utilisateur.
+        _email (str): Adresse email de l'utilisateur, doit être unique.
+        _password_hash (str): Hash du mot de passe de l'utilisateur.
+        _role_id (int): Identifiant du rôle de l'utilisateur, par défaut 2 (utilisateur standard).
+        _notification (bool): Indique si l'utilisateur a activé les notifications.
+        created_at (datetime): Date et heure de création du compte.
+        updated_at (datetime): Date et heure de la dernière mise à jour du compte.
+
+    Relationships:
+        role (Role): Le rôle associé à l'utilisateur.
+        entries (Entry): Les participations de l'utilisateur aux loteries.
+
+    Properties:
+        first_name (str): Prénom de l'utilisateur (lecture et écriture).
+        last_name (str): Nom de famille de l'utilisateur (lecture et écriture).
+        email (str): Adresse email de l'utilisateur (lecture et écriture).
+        notification (bool): Préférence de notification (lecture et écriture).
+        full_name (str): Nom complet de l'utilisateur (lecture).
+        role_name (str): Nom du rôle de l'utilisateur (lecture).
+        is_admin (bool): Indique si l'utilisateur est un administrateur (lecture).
+        password_hash (str): Hash du mot de passe de l'utilisateur (écriture uniquement).
+
+    Example:
+        new_user = User(first_name="John", last_name="Doe", email="john.doe@example.com", password_hash="secure_password")
+    """
+
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)

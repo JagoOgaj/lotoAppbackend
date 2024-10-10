@@ -9,6 +9,44 @@ from app.tools.status_tools import Status
 
 
 class Lottery(db.Model):
+    """
+    Représente une loterie.
+
+    Cette classe correspond à la table 'lotteries' dans la base de données.
+    Elle stocke les informations relatives à une loterie, y compris le nom,
+    les dates de début et de fin, le statut, le prix de la récompense,
+    et le nombre maximum de participants.
+
+    Attributes:
+        id (int): Identifiant unique de la loterie (clé primaire).
+        _name (str): Nom de la loterie.
+        _start_date (datetime): Date de début de la loterie.
+        _end_date (datetime): Date de fin de la loterie.
+        _status (str): Statut actuel de la loterie (ex. : "active", "terminated").
+        _reward_price (int): Montant de la récompense pour cette loterie.
+        _max_participants (int): Nombre maximum de participants autorisés.
+        created_at (datetime): Date de création de la loterie.
+        updated_at (datetime): Date de la dernière mise à jour de la loterie.
+        entries (list): Liste des inscriptions associées à cette loterie.
+        results (LotteryResult): Résultat associé à cette loterie.
+
+    Properties:
+        name (str): Getter et setter pour le nom de la loterie.
+        start_date (datetime): Getter et setter pour la date de début.
+        end_date (datetime): Getter et setter pour la date de fin.
+        status (str): Getter et setter pour le statut de la loterie.
+        reward_price (int): Getter et setter pour le prix de la récompense.
+        max_participants (int): Getter et setter pour le nombre maximum de participants.
+        participant_count (int): Compte le nombre de participants actuels.
+        is_active (bool): Indique si la loterie est actuellement active.
+
+    Methods:
+        __repr__(): Retourne une représentation en chaîne de l'objet Lottery.
+
+    Example:
+        lottery = Lottery(name="Loterie de Noël", start_date=datetime(2024, 12, 1), end_date=datetime(2024, 12, 25), status="active", reward_price=1000, max_participants=100)
+    """
+
     __tablename__ = "lotteries"
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)

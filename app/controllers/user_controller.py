@@ -30,6 +30,34 @@ user_bp = Blueprint("user", __name__)
 
 @user_bp.route("/login", methods=["POST"])
 def login_user():
+    """
+    Authentifie un utilisateur et génère des tokens d'accès et de rafraîchissement.
+
+    Cette fonction permet aux utilisateurs de se connecter en fournissant leur adresse email
+    et leur mot de passe. Si les informations sont valides, elle génère un token d'accès et un
+    token de rafraîchissement pour l'utilisateur, qui peuvent être utilisés pour accéder à des
+    ressources protégées.
+
+    Returns:
+        Response:
+            - Si l'authentification réussit, renvoie un message de succès avec les tokens.
+            - Si l'utilisateur n'est pas trouvé, renvoie un message d'erreur 404.
+            - Si le mot de passe est incorrect, renvoie un message d'erreur 401.
+            - Si une erreur de validation se produit, renvoie un message d'erreur 400 avec des détails.
+
+    Example:
+        Pour utiliser cette fonction, envoyez une requête POST à l'URL `/login`
+        avec un corps JSON contenant les champs suivants :
+
+        {
+            "email": "user@example.com",
+            "password": "votre_mot_de_passe"
+        }
+
+    Raises:
+        ValidationError: Si les données de connexion ne respectent pas le schéma défini.
+        Exception: Pour toutes les autres erreurs survenant lors du processus de connexion.
+    """
     try:
         data = request.get_json()
 
@@ -95,6 +123,36 @@ def login_user():
 
 @user_bp.route("/register", methods=["POST"])
 def register_user():
+    """
+    Enregistre un nouvel utilisateur dans le système.
+
+    Cette fonction permet à un nouvel utilisateur de s'inscrire en fournissant
+    ses informations personnelles. Si l'email est déjà utilisé, un message d'erreur
+    est renvoyé. Si l'inscription est réussie, un utilisateur est créé dans la base
+    de données et des tokens d'accès et de rafraîchissement sont générés pour l'utilisateur.
+
+    Returns:
+        Response:
+            - Si l'inscription réussit, renvoie un message de succès avec les tokens.
+            - Si l'email est déjà utilisé, renvoie un message d'erreur 400.
+            - Si une erreur de validation se produit, renvoie un message d'erreur 400 avec des détails.
+            - Si une autre erreur se produit, renvoie un message d'erreur 500.
+
+    Example:
+        Pour utiliser cette fonction, envoyez une requête POST à l'URL `/register`
+        avec un corps JSON contenant les champs suivants :
+
+        {
+            "first_name": "Prénom",
+            "last_name": "Nom",
+            "email": "user@example.com",
+            "password": "votre_mot_de_passe"
+        }
+
+    Raises:
+        ValidationError: Si les données d'inscription ne respectent pas le schéma défini.
+        Exception: Pour toutes les autres erreurs survenant lors du processus d'inscription.
+    """
     try:
         data = request.get_json()
         schema = UserCreateSchema()
@@ -167,6 +225,37 @@ def register_user():
 @user_bp.route("/account-info", methods=["GET"])
 @jwt_required()
 def account_info():
+    """
+    Récupère les informations du compte de l'utilisateur connecté.
+
+    Cette fonction vérifie si l'utilisateur est connecté et récupère ses
+    informations de compte, telles que le prénom, le nom, l'email et les
+    préférences de notification. Les informations sont renvoyées sous
+    forme de JSON.
+
+    Returns:
+        Response:
+            - 200 OK: Si les informations de l'utilisateur sont récupérées avec succès.
+            - 404 Not Found: Si aucun utilisateur n'est trouvé pour l'identité fournie.
+            - 400 Bad Request: En cas d'erreur de validation lors de la récupération des informations.
+            - 500 Internal Server Error: Pour toute autre erreur survenant lors du traitement.
+
+    Example:
+        Pour utiliser cette fonction, envoyez une requête GET à l'URL `/account-info`
+        avec un token JWT valide dans l'en-tête d'autorisation. La réponse contiendra
+        les informations de compte de l'utilisateur au format JSON :
+
+        {
+            "first_name": "Prénom",
+            "last_name": "Nom",
+            "email": "user@example.com",
+            "notification": true
+        }
+
+    Raises:
+        ValidationError: Si les données récupérées ne respectent pas le schéma défini.
+        Exception: Pour toutes les autres erreurs survenant lors de la récupération des informations.
+    """
     try:
         user = get_current_user()
         if not user:
@@ -213,6 +302,44 @@ def account_info():
 @user_bp.route("/update-info", methods=["PUT"])
 @jwt_required()
 def update_info():
+    """
+    Met à jour les informations du compte de l'utilisateur connecté.
+
+    Cette fonction permet à l'utilisateur de mettre à jour ses informations
+    de compte, y compris le prénom, le nom, l'email et les préférences de
+    notification. Les nouvelles données doivent être envoyées au format JSON
+    dans le corps de la requête. Les mises à jour ne se produiront que si
+    les champs correspondants sont inclus dans la demande.
+
+    Returns:
+        Response:
+            - 200 OK: Si les informations de l'utilisateur ont été mises à jour avec succès.
+            - 404 Not Found: Si aucun utilisateur n'est trouvé pour l'identité fournie.
+            - 400 Bad Request: En cas d'erreur de validation lors de la mise à jour des informations.
+            - 500 Internal Server Error: Pour toute autre erreur survenant lors du traitement.
+
+    Example:
+        Pour utiliser cette fonction, envoyez une requête PUT à l'URL `/update-info`
+        avec un token JWT valide dans l'en-tête d'autorisation et des données JSON dans
+        le corps de la requête, par exemple :
+
+        {
+            "first_name": "NouveauPrénom",
+            "last_name": "NouveauNom",
+            "email": "nouveau_email@example.com",
+            "notification": false
+        }
+
+        La réponse en cas de succès sera :
+
+        {
+            "message": "Vos informations ont été mises à jour avec succès."
+        }
+
+    Raises:
+        ValidationError: Si les données fournies ne respectent pas le schéma défini.
+        Exception: Pour toutes les autres erreurs survenant lors de la mise à jour des informations.
+    """
     try:
         user = get_current_user()
 
@@ -268,6 +395,43 @@ def update_info():
 @user_bp.route("/update-password", methods=["PUT"])
 @jwt_required()
 def update_password():
+    """
+    Met à jour le mot de passe de l'utilisateur connecté.
+
+    Cette fonction permet à un utilisateur de changer son mot de passe.
+    L'utilisateur doit fournir son ancien mot de passe ainsi qu'un nouveau
+    mot de passe. La validation s'assure que le nouveau mot de passe est
+    différent de l'ancien et que l'ancien mot de passe est correct.
+
+    Returns:
+        Response:
+            - 200 OK: Si le mot de passe a été mis à jour avec succès.
+            - 404 Not Found: Si aucun utilisateur n'est trouvé pour l'identité fournie.
+            - 400 Bad Request: En cas d'ancien mot de passe incorrect,
+              ou si le nouveau mot de passe est identique à l'ancien.
+            - 400 Bad Request: En cas d'erreur de validation lors de la mise à jour du mot de passe.
+            - 500 Internal Server Error: Pour toute autre erreur survenant lors du traitement.
+
+    Example:
+        Pour utiliser cette fonction, envoyez une requête PUT à l'URL `/update-password`
+        avec un token JWT valide dans l'en-tête d'autorisation et des données JSON dans
+        le corps de la requête, par exemple :
+
+        {
+            "old_password": "AncienMotDePasse",
+            "new_password": "NouveauMotDePasse"
+        }
+
+        La réponse en cas de succès sera :
+
+        {
+            "message": "Votre mot de passe a été mis à jour avec succès."
+        }
+
+    Raises:
+        ValidationError: Si les données fournies ne respectent pas le schéma défini.
+        Exception: Pour toutes les autres erreurs survenant lors de la mise à jour du mot de passe.
+    """
     try:
         user = get_current_user()
 
@@ -340,6 +504,30 @@ def update_password():
 @user_bp.route("/logout", methods=["POST"])
 @jwt_required()
 def logout_user():
+    """
+    Déconnecte l'utilisateur actuel.
+
+    Cette fonction permet à un utilisateur de se déconnecter en révoquant
+    le token JWT actuel. Cela empêche toute utilisation future de ce token
+    pour accéder aux ressources protégées.
+
+    Returns:
+        Response:
+            - 200 OK: Si la déconnexion a réussi.
+            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+
+    Example:
+        Pour utiliser cette fonction, envoyez une requête POST à l'URL `/logout`
+        avec un token JWT valide dans l'en-tête d'autorisation. La réponse en cas de succès
+        sera :
+
+        {
+            "message": "Déconnexion réussie."
+        }
+
+    Raises:
+        Exception: Pour toute erreur survenant lors de la révocation du token.
+    """
     try:
         jti = get_jwt()["jti"]
         user_id = get_jwt_identity()
@@ -361,6 +549,40 @@ def logout_user():
 @user_bp.route("/lottery-registry", methods=["POST"])
 @jwt_required()
 def lottery_registry():
+    """
+    Enregistre un utilisateur pour participer à une loterie.
+
+    Cette fonction permet à un utilisateur authentifié de s'inscrire à une
+    loterie en fournissant ses numéros et numéros chanceux. La loterie
+    doit être active et ne doit pas être terminée.
+
+    Returns:
+        Response:
+            - 201 Created: Si l'inscription à la loterie est réussie.
+            - 400 Bad Request: Si la loterie n'est pas active ou si l'enregistrement échoue.
+            - 404 Not Found: Si l'utilisateur ou la loterie n'est pas trouvé.
+            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+
+    Example:
+        Pour utiliser cette fonction, envoyez une requête POST à l'URL `/lottery-registry`
+        avec un token JWT valide dans l'en-tête d'autorisation et un corps JSON comme suit :
+
+        {
+            "lottery_id": 1,
+            "numbers": [1, 2, 3, 4, 5],
+            "lucky_numbers": [6, 7]
+        }
+
+        La réponse en cas de succès sera :
+
+        {
+            "message": "Inscription à la loterie réussie."
+        }
+
+    Raises:
+        ValidationError: Pour toute erreur lors de la validation des données d'entrée.
+        Exception: Pour toute erreur survenant lors de l'enregistrement à la loterie.
+    """
     try:
         user_id = get_jwt_identity()
         if not user_id:
@@ -437,6 +659,36 @@ def lottery_registry():
 @user_bp.route("/lottery/results/<int:lottery_id>", methods=["GET"])
 @jwt_required()
 def get_lottery_results(lottery_id):
+    """
+    Récupère les résultats d'une loterie spécifique.
+
+    Cette fonction permet aux utilisateurs authentifiés de consulter les résultats
+    d'une loterie en fournissant l'identifiant de la loterie. Les résultats incluent
+    les numéros gagnants et les numéros chanceux associés à la loterie.
+
+    Args:
+        lottery_id (int): L'identifiant de la loterie dont on souhaite obtenir les résultats.
+
+    Returns:
+        Response:
+            - 200 OK: Si les résultats de la loterie sont trouvés, renvoie les détails de la loterie.
+            - 404 Not Found: Si la loterie ou ses résultats ne sont pas trouvés.
+            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+
+    Example:
+        Pour utiliser cette fonction, envoyez une requête GET à l'URL
+        `/lottery/results/1` (où `1` est l'identifiant de la loterie).
+        La réponse en cas de succès sera :
+
+        {
+            "lottery_name": "Nom de la loterie",
+            "winning_numbers": [1, 2, 3, 4, 5],
+            "lucky_numbers": [6, 7]
+        }
+
+    Raises:
+        Exception: Pour toute erreur survenant lors de la récupération des résultats.
+    """
     try:
         lottery = Lottery.query.filter_by(id=lottery_id).one_or_none()
 
@@ -465,11 +717,7 @@ def get_lottery_results(lottery_id):
             jsonify(
                 {
                     "lottery_name": lottery.name,
-                    # Directement sous forme de
-                    # chaîne
                     "winning_numbers": lottery_result.winning_numbers,
-                    # Directement sous forme de
-                    # chaîne
                     "lucky_numbers": lottery_result.winning_lucky_numbers,
                 }
             ),
@@ -492,6 +740,44 @@ def get_lottery_results(lottery_id):
 @user_bp.route("/lottery-history", methods=["GET"])
 @jwt_required()
 def lottery_history_user():
+    """
+    Récupère l'historique des participations de l'utilisateur à la loterie.
+
+    Cette fonction permet aux utilisateurs authentifiés de consulter l'historique
+    de leurs participations aux loteries, y compris les détails des loteries et
+    des participations associées.
+
+    Returns:
+        Response:
+            - 200 OK: Si l'historique des participations est récupéré avec succès.
+            - 400 Bad Request: Si aucune participation n'est trouvée pour l'utilisateur.
+            - 404 Not Found: Si l'utilisateur n'est pas trouvé.
+            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+
+    Example:
+        Pour utiliser cette fonction, envoyez une requête GET à l'URL
+        `/lottery-history`. La réponse en cas de succès sera :
+
+        {
+            "message": "Historique des participations récupéré avec succès.",
+            "data": [
+                {
+                    "id": 1,
+                    "name": "Loterie de Noël",
+                    "date": "01 Décembre 2023",
+                    "statut": "EN_VALIDATION",
+                    "numerosJoues": [1, 2, 3, 4, 5],
+                    "numerosChance": [6, 7],
+                    "dateTirage": "25 Décembre 2023"
+                },
+                ...
+            ]
+        }
+
+    Raises:
+        ValidationError: Pour toute erreur survenant lors de la validation des données.
+        Exception: Pour toute erreur survenant lors de la récupération de l'historique.
+    """
     try:
         user_id = get_jwt_identity()
         if not user_id:
@@ -526,8 +812,6 @@ def lottery_history_user():
                 lottery.status = Status.EN_VALIDATION.value
                 db.session.commit()
 
-            # Formater la date pour
-            # l'affichage
             date_participation = lottery.start_date.strftime("%d %B %Y")
             date_tirage = lottery.end_date.strftime("%d %B %Y")
 
@@ -584,6 +868,36 @@ def lottery_history_user():
 @user_bp.route("/lottery/current", methods=["GET"])
 @jwt_required()
 def get_current_lottery():
+    """
+    Récupère les informations sur la loterie en cours.
+
+    Cette fonction permet à un utilisateur authentifié de récupérer
+    les détails de la loterie actuelle. Elle vérifie également si l'utilisateur
+    est déjà inscrit à cette loterie.
+
+    Returns:
+        Response:
+            - 200 OK: Si la loterie en cours est récupérée avec succès.
+            - 400 Bad Request: Si aucune loterie en cours n'est trouvée ou si
+              l'utilisateur est déjà inscrit à cette loterie.
+            - 404 Not Found: Si l'utilisateur n'est pas trouvé.
+            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+
+    Example:
+        Pour utiliser cette fonction, envoyez une requête GET à l'URL
+        `/lottery/current`. La réponse en cas de succès sera :
+
+        {
+            "id": 1,
+            "name": "Loterie de Noël",
+            "status": "EN_COUR",
+            "start_date": "01 Décembre 2023",
+            "end_date": "25 Décembre 2023"
+        }
+
+    Raises:
+        Exception: Pour toute erreur survenant lors de la récupération de la loterie.
+    """
     try:
         user = get_current_user()
         if not user:
@@ -641,6 +955,47 @@ def get_current_lottery():
 @user_bp.route("/lottery-details/<int:lottery_id>", methods=["GET"])
 @jwt_required()
 def lottery_details(lottery_id):
+    """
+    Récupère les détails d'une loterie spécifique.
+
+    Cette fonction permet à un utilisateur authentifié de récupérer
+    les détails d'une loterie donnée par son identifiant. Elle vérifie
+    également si la loterie a atteint sa date de fin et met à jour son
+    statut en conséquence. Les numéros gagnants et les numéros chanceux
+    sont également retournés si disponibles.
+
+    Args:
+        lottery_id (int): L'identifiant de la loterie dont on souhaite obtenir les détails.
+
+    Returns:
+        Response:
+            - 200 OK: Si les détails de la loterie sont récupérés avec succès.
+            - 400 Bad Request: Si une erreur se produit lors de la récupération.
+            - 404 Not Found: Si la loterie avec l'identifiant fourni n'est pas trouvée.
+            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+
+    Example:
+        Pour utiliser cette fonction, envoyez une requête GET à l'URL
+        `/lottery-details/1`. La réponse en cas de succès sera :
+
+        {
+            "message": "Details du tirage",
+            "data": {
+                "id": 1,
+                "name": "Loterie de Noël",
+                "status": "EN_COUR",
+                "start_date": "01 Décembre 2023",
+                "end_date": "25 Décembre 2023"
+            },
+            "numbers": {
+                "winning_numbers": "1, 2, 3, 4, 5",
+                "lucky_numbers": "6, 7"
+            }
+        }
+
+    Raises:
+        Exception: Pour toute erreur survenant lors de la récupération des détails de la loterie.
+    """
     try:
         lottery = Lottery.query.filter_by(id=lottery_id).one_or_none()
         if lottery is None:
@@ -707,6 +1062,53 @@ def lottery_details(lottery_id):
 @user_bp.route("/lottery-rank/<int:lottery_id>", methods=["GET"])
 @jwt_required()
 def lottery_rank(lottery_id):
+    """
+    Récupère le classement des participants d'un tirage de loterie spécifique.
+
+    Cette fonction permet à un utilisateur authentifié d'obtenir le classement
+    des participants pour une loterie donnée par son identifiant. Elle renvoie
+    également les résultats de l'utilisateur courant s'il a participé à la loterie.
+
+    Args:
+        lottery_id (int): L'identifiant du tirage de loterie dont on souhaite obtenir le classement.
+
+    Returns:
+        Response:
+            - 200 OK: Si le classement des participants est récupéré avec succès.
+            - 404 Not Found: Si la loterie ou le classement n'est pas trouvé.
+            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+
+    Example:
+        Pour utiliser cette fonction, envoyez une requête GET à l'URL
+        `/lottery-rank/1`. La réponse en cas de succès sera :
+
+        {
+            "message": "Rankings retrieved successfully",
+            "data": [
+                {
+                    "name": "John Doe",
+                    "rank": 1,
+                    "score": 100,
+                    "winnings": 1000
+                },
+                {
+                    "name": "Jane Smith",
+                    "rank": 2,
+                    "score": 90,
+                    "winnings": 500
+                }
+            ],
+            "currentUser": {
+                "name": "John Doe",
+                "rank": 1,
+                "score": 100,
+                "winnings": 1000
+            }
+        }
+
+    Raises:
+        Exception: Pour toute erreur survenant lors de la récupération des classements.
+    """
     try:
         lottery = Lottery.query.filter_by(id=lottery_id).one_or_none()
 

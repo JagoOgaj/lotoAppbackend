@@ -43,6 +43,34 @@ admin_bp = Blueprint("admin", __name__)
 
 @admin_bp.route("/login", methods=["POST"])
 def login_admin():
+    """
+    Route d'authentification pour les administrateurs.
+
+    Cette fonction permet à un utilisateur d'administrer de se connecter en fournissant un email et un mot de passe.
+    Seuls les utilisateurs avec un rôle administrateur (identifiés par `_role_id=1`) sont autorisés à accéder à cette route.
+
+    Processus :
+    1. Récupère les données JSON de la requête.
+    2. Valide et charge les données selon le schéma `UserLoginSchema`.
+    3. Vérifie que l'utilisateur existe et qu'il a le rôle administrateur.
+    4. Vérifie la validité du mot de passe avec le hash enregistré.
+    5. Si toutes les conditions sont remplies, génère un `access_token` et un `refresh_token` pour l'utilisateur, et les enregistre dans la base de données.
+
+    En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
+    - 404 si l'utilisateur n'est pas trouvé,
+    - 403 si l'utilisateur n'est pas administrateur,
+    - 401 si le mot de passe est incorrect,
+    - 400 en cas d'erreur de validation des champs ou autre exception.
+
+    Retourne :
+        - 201 avec les tokens (`access_token`, `refresh_token`) en cas de succès.
+        - JSON avec les messages d'erreur et un code HTTP en cas d'échec.
+
+    Exceptions :
+        - `ValidationError` : Erreur dans la validation des champs du formulaire.
+        - `Exception` : Autres erreurs capturées pendant l'exécution.
+
+    """
     try:
         data = request.get_json()
         schama = UserLoginSchema()
@@ -113,6 +141,32 @@ def login_admin():
 
 @admin_bp.route("/create", methods=["GET"])
 def create_admin():
+    """
+    Route de création d'un administrateur.
+
+    Cette fonction permet de créer un nouvel utilisateur avec un rôle administrateur.
+    Les données du nouvel administrateur sont reçues au format JSON et doivent être validées par le schéma `UserCreateSchema`.
+
+    Processus :
+    1. Récupère les données JSON de la requête.
+    2. Valide et charge les données selon le schéma `UserCreateSchema`.
+    3. Vérifie si l'email fourni existe déjà dans la base de données. Si c'est le cas, renvoie une erreur.
+    4. Si l'email est unique, crée un nouvel utilisateur avec le rôle administrateur (`_role_id=1`), hache le mot de passe, et enregistre les informations dans la base de données.
+    5. Enregistre le nouvel administrateur dans la base de données via `db.session.add()` et `db.session.commit()`.
+
+    En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
+    - 400 si l'email est déjà utilisé,
+    - 400 en cas d'erreur de validation des champs ou autre exception.
+
+    Retourne :
+        - 201 avec un message de succès si l'utilisateur est créé.
+        - JSON avec un message d'erreur et un code HTTP en cas d'échec.
+
+    Exceptions :
+        - `ValidationError` : Erreur dans la validation des champs du formulaire.
+        - `Exception` : Autres erreurs capturées pendant l'exécution.
+
+    """
     try:
         data = request.get_json()
         schema = UserCreateSchema()
@@ -192,6 +246,33 @@ def account_info():
 @jwt_required()
 @admin_role_required
 def update_info():
+    """
+    Route pour récupérer les informations du compte administrateur.
+
+    Cette fonction permet à un utilisateur administrateur d'accéder à ses informations de compte.
+    Elle est protégée par deux décorateurs :
+    - `@jwt_required()`: Nécessite une authentification JWT valide.
+    - `@admin_role_required`: Nécessite que l'utilisateur soit un administrateur.
+
+    Processus :
+    1. Récupère l'utilisateur actuellement connecté via `get_current_user()`.
+    2. Vérifie que l'utilisateur est bien un administrateur. Si aucun utilisateur n'est trouvé, renvoie une erreur 404.
+    3. Sérialise les informations de l'utilisateur administrateur avec le schéma `UserOverviewInfoSchema`.
+    4. Retourne les données sérialisées sous forme de JSON.
+
+    En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
+    - 404 si aucun utilisateur n'est trouvé.
+    - 400 en cas d'erreur de validation des données.
+    - 500 pour toute autre exception non prévue.
+
+    Retourne :
+        - 200 avec les informations de l'utilisateur administrateur en cas de succès.
+        - JSON avec un message d'erreur et un code HTTP en cas d'échec.
+
+    Exceptions :
+        - `ValidationError` : Erreur dans la récupération ou la validation des informations de l'utilisateur.
+        - `Exception` : Toute autre erreur rencontrée pendant l'exécution.
+    """
     try:
         userAdmin = get_current_user()
         if not userAdmin:
@@ -244,6 +325,37 @@ def update_info():
 @jwt_required()
 @admin_role_required
 def update_password():
+    """
+    Route pour mettre à jour le mot de passe d'un administrateur.
+
+    Cette fonction permet à un administrateur de mettre à jour son mot de passe.
+    Elle est protégée par deux décorateurs :
+    - `@jwt_required()`: Nécessite une authentification JWT valide.
+    - `@admin_role_required`: Nécessite que l'utilisateur soit un administrateur.
+
+    Processus :
+    1. Récupère l'utilisateur actuellement connecté via `get_current_user()`.
+    2. Vérifie que l'utilisateur existe. Si aucun utilisateur n'est trouvé, renvoie une erreur 404.
+    3. Récupère les données JSON envoyées dans la requête et les valide via le schéma `UserPasswordUpdateSchema`.
+    4. Vérifie si l'ancien mot de passe est correct. Si ce n'est pas le cas, renvoie une erreur 400.
+    5. Vérifie que le nouveau mot de passe est différent de l'ancien. Si le nouveau mot de passe est le même que l'ancien, renvoie une erreur 400.
+    6. Met à jour le hash du mot de passe de l'administrateur avec le nouveau mot de passe.
+    7. Enregistre la mise à jour dans la base de données et renvoie un message de succès.
+
+    En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
+    - 404 si aucun utilisateur n'est trouvé.
+    - 400 si l'ancien mot de passe est incorrect ou si le nouveau mot de passe est le même que l'ancien.
+    - 400 en cas d'erreur de validation des données.
+    - 500 pour toute autre exception non prévue.
+
+    Retourne :
+        - 200 avec un message de succès si le mot de passe est mis à jour.
+        - JSON avec un message d'erreur et un code HTTP en cas d'échec.
+
+    Exceptions :
+        - `ValidationError` : Erreur de validation des données envoyées par l'utilisateur.
+        - `Exception` : Toute autre erreur inattendue rencontrée pendant l'exécution.
+    """
     try:
         userAdmin = get_current_user()
 
@@ -315,6 +427,35 @@ def update_password():
 @jwt_required()
 @admin_role_required
 def delete_lottery(lottery_id):
+    """
+    Route pour supprimer une loterie et ses données associées.
+
+    Cette fonction permet de supprimer une loterie, ainsi que tous les utilisateurs de rôle participant (rôle 3)
+    et les entrées associées à cette loterie, ainsi que les résultats de la loterie s'ils existent.
+
+    La route est protégée par deux décorateurs :
+    - `@jwt_required()`: Nécessite une authentification JWT valide.
+    - `@admin_role_required`: Nécessite que l'utilisateur soit un administrateur.
+
+    Processus :
+    1. Récupère la loterie à supprimer via l'ID fourni dans l'URL. Si aucune loterie n'est trouvée avec cet ID, renvoie une erreur 404.
+    2. Récupère tous les utilisateurs ayant un rôle de participant (rôle 3) et qui ont des entrées pour cette loterie, et les supprime de la base de données.
+    3. Supprime toutes les entrées liées à cette loterie de la base de données.
+    4. Supprime les résultats de la loterie, s'ils existent.
+    5. Supprime la loterie elle-même.
+    6. Valide toutes les suppressions en effectuant des commits dans la base de données après chaque suppression.
+
+    En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
+    - 404 si aucune loterie n'est trouvée avec l'ID fourni.
+    - 500 pour toute autre erreur rencontrée pendant le processus de suppression.
+
+    Retourne :
+        - 200 avec un message de succès si la suppression est effectuée avec succès.
+        - JSON avec un message d'erreur et un code HTTP en cas d'échec.
+
+    Exceptions :
+        - `Exception` : Toute erreur inattendue rencontrée pendant l'exécution du processus de suppression.
+    """
     try:
         lottery = Lottery.query.get(lottery_id)
         if not lottery:
@@ -373,6 +514,34 @@ def delete_lottery(lottery_id):
 @jwt_required()
 @admin_role_required
 def lottery_create():
+    """
+    Route pour créer une nouvelle loterie.
+
+    Cette fonction permet à un administrateur de créer un nouveau tirage de loterie.
+    La création d'un nouveau tirage est soumise à des règles de validation, telles que l'absence d'un autre tirage en cours
+    et la validation des dates de début et de fin.
+
+    Processus :
+    1. Récupère les données JSON envoyées dans la requête et les valide avec `LotteryCreateSchema`.
+    2. Vérifie s'il existe déjà une loterie en cours (statut "EN_COUR"). Si une loterie est active, aucune nouvelle loterie ne peut être créée tant que celle-ci n'est pas terminée, sauf si le nouveau tirage est de type "SIMULATION".
+    3. Valide les dates de début et de fin. La date de fin ne peut pas être antérieure ou égale à la date de début, et la date de début ne peut pas être dans le passé.
+    4. Si le statut est "SIMULATION", la loterie est créée sans dates de début et de fin, sinon, les dates sont obligatoires.
+    5. Enregistre la nouvelle loterie dans la base de données.
+    6. Envoie un email aux utilisateurs pour les informer de la création du tirage.
+    7. Valide et sauvegarde les modifications dans la base de données.
+
+    En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
+    - 400 si les données sont invalides ou si un tirage est déjà en cours.
+    - 500 pour toute autre exception non prévue.
+
+    Retourne :
+        - 201 avec un message de succès si le tirage est créé.
+        - JSON avec un message d'erreur et un code HTTP en cas d'échec.
+
+    Exceptions :
+        - `ValidationError` : Erreur dans la validation des données envoyées pour la création du tirage.
+        - `Exception` : Toute autre erreur inattendue rencontrée pendant le processus de création.
+    """
     try:
         data = request.get_json()
         lotteryCreateSchema = LotteryCreateSchema()
@@ -465,6 +634,41 @@ def lottery_create():
 @jwt_required()
 @admin_role_required
 def update_lottery(lottery_id):
+    """
+    Route pour mettre à jour les informations d'une loterie existante.
+
+    Cette fonction permet à un administrateur de modifier les détails d'une loterie spécifiée par son ID.
+    Les mises à jour peuvent inclure le nom, les dates de début et de fin, le statut, le nombre maximum de participants
+    et le prix de récompense.
+
+    Paramètres :
+        lottery_id (int) : L'ID de la loterie à mettre à jour. Ce paramètre est requis et doit être un entier.
+
+    Processus :
+    1. Récupère la loterie à mettre à jour à partir de l'ID fourni. Si la loterie n'est pas trouvée, renvoie une erreur 404.
+    2. Récupère les données JSON envoyées dans la requête et les valide avec `LotteryUpdateSchema`.
+    3. Si un nouveau nom est fourni, met à jour le nom de la loterie.
+    4. Vérifie et met à jour les dates de début et de fin, avec plusieurs validations :
+        - La date de fin ne doit pas être antérieure ou égale à la date de début.
+        - La nouvelle date de début ne doit pas être antérieure à l'ancienne date de début.
+        - La date de début ne doit pas être supérieure ou égale à la date de fin.
+    5. Met à jour le statut de la loterie si un nouveau statut est fourni.
+    6. Met à jour le nombre maximum de participants et le prix de récompense si ces valeurs sont fournies.
+    7. Valide et sauvegarde les modifications dans la base de données.
+
+    En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
+    - 404 si la loterie n'est pas trouvée ou si les données envoyées sont invalides.
+    - 400 pour les erreurs de validation des données.
+    - 500 pour toute autre exception non prévue.
+
+    Retourne :
+        - 200 avec un message de succès si les informations de la loterie ont été mises à jour.
+        - JSON avec un message d'erreur et un code HTTP en cas d'échec.
+
+    Exceptions :
+        - `ValidationError` : Erreur dans la validation des données envoyées pour la mise à jour.
+        - `Exception` : Toute autre erreur inattendue rencontrée pendant le processus de mise à jour.
+    """
     try:
         lottery = Lottery.query.filter_by(id=lottery_id).one_or_none()
         if lottery is None:
@@ -640,6 +844,31 @@ def update_lottery(lottery_id):
 @jwt_required()
 @admin_role_required
 def lottery_list():
+    """
+    Route pour récupérer la liste de toutes les loteries existantes.
+
+    Cette fonction permet à un administrateur de récupérer toutes les loteries enregistrées dans le système.
+    Elle met également à jour le statut des loteries qui ont atteint leur date de fin et ne sont pas encore terminées
+    ou en simulation.
+
+    Processus :
+    1. Récupère toutes les loteries à partir de la base de données.
+    2. Pour chaque loterie, vérifie si le statut est différent de `TERMINE`, `SIMULATION`, ou `SIMULATION_TERMINE`.
+       - Si la date actuelle est supérieure ou égale à la date de fin de la loterie, le statut de la loterie est mis à jour à `EN_VALIDATION`.
+    3. Utilise `LotteryOverviewSchema` pour sérialiser les données des loteries.
+    4. Renvoie la liste des loteries avec un message de succès.
+
+    En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
+    - 400 pour les erreurs de validation lors de la récupération des loteries.
+    - 500 pour toute autre exception non prévue.
+
+    Retourne :
+        - 200 avec un message de succès et la liste des tirages.
+
+    Exceptions :
+        - `ValidationError` : Erreur dans la validation des données lors de la récupération des loteries.
+        - `Exception` : Toute autre erreur inattendue rencontrée pendant le processus de récupération.
+    """
     try:
         lotteries = Lottery.query.all()
         current_date = datetime.utcnow()
@@ -694,6 +923,33 @@ def lottery_list():
 @jwt_required()
 @admin_role_required
 def lottery_details(lottery_id):
+    """
+    Récupère les détails d'une loterie à partir de son identifiant.
+
+    Cette méthode permet de récupérer les informations d'une loterie spécifique,
+    y compris son statut, ainsi que les numéros gagnants et les numéros chanceux associés.
+    Si la loterie n'est pas trouvée, ou si une erreur se produit lors de la récupération des données,
+    un message d'erreur approprié est renvoyé.
+
+    Args:
+        lottery_id (int): L'identifiant unique de la loterie pour laquelle les détails sont demandés.
+
+    Returns:
+        tuple: Un tuple contenant un objet JSON avec les détails de la loterie,
+               ainsi qu'un code de statut HTTP.
+               - En cas de succès (200):
+                   - 'message': Un message confirmant la récupération des détails de la loterie.
+                   - 'data': Les détails de la loterie sous forme de dictionnaire.
+                   - 'numbers': Un dictionnaire contenant les numéros gagnants et les numéros chanceux.
+               - En cas d'erreur (404, 400 ou 500):
+                   - 'errors': Un booléen indiquant qu'une erreur s'est produite.
+                   - 'message': Un message décrivant l'erreur.
+                   - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
+
+    Raises:
+        ValidationError: Si une erreur de validation se produit lors de la récupération des détails de la loterie.
+        Exception: Pour toute autre erreur inattendue.
+    """
     try:
         lottery = Lottery.query.filter_by(id=lottery_id).one_or_none()
         if lottery is None:
@@ -763,6 +1019,30 @@ def lottery_details(lottery_id):
 @jwt_required()
 @admin_role_required
 def participants_list(lottery_id):
+    """
+    Récupère la liste des participants d'une loterie spécifiée.
+
+    Cette méthode permet de récupérer tous les participants inscrits à une loterie
+    donnée en fonction de son identifiant. Si la loterie n'est pas trouvée, une erreur 404
+    est renvoyée. Les informations des participants sont retournées sous forme de liste.
+
+    Args:
+        lottery_id (int): L'identifiant unique de la loterie pour laquelle on souhaite obtenir la liste des participants.
+
+    Returns:
+        tuple: Un tuple contenant un objet JSON avec la liste des participants et un code de statut HTTP.
+               - En cas de succès (200):
+                   - 'message': Un message confirmant la récupération réussie de la liste des participants.
+                   - 'data': Une liste d'objets représentant les participants de la loterie.
+               - En cas d'erreur (400 ou 500):
+                   - 'errors': Un booléen indiquant qu'une erreur s'est produite.
+                   - 'message': Un message décrivant l'erreur.
+                   - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
+
+    Raises:
+        ValidationError: Si une erreur de validation se produit lors de la récupération des participants.
+        Exception: Pour toute autre erreur inattendue.
+    """
     try:
         lottery = Lottery.query.get_or_404(lottery_id)
         participants = Entry.query.filter_by(lottery_id=lottery.id).all()
@@ -807,6 +1087,30 @@ def participants_list(lottery_id):
 @jwt_required()
 @admin_role_required
 def lottery_rank(lottery_id):
+    """
+    Récupère le classement des participants pour un tirage de loterie spécifique.
+
+    Cette méthode permet de récupérer les résultats et le classement des participants
+    pour un tirage de loterie donné. Si la loterie ou les résultats ne sont pas trouvés,
+    des messages d'erreur appropriés sont renvoyés.
+
+    Args:
+        lottery_id (int): L'identifiant unique du tirage de loterie pour lequel le classement est demandé.
+
+    Returns:
+        tuple: Un tuple contenant un objet JSON avec les classements des participants
+               et un code de statut HTTP.
+               - En cas de succès (200):
+                   - 'message': Un message confirmant la récupération réussie des classements.
+                   - 'data': Une liste d'objets représentant les classements des participants.
+               - En cas d'erreur (404 ou 500):
+                   - 'errors': Un booléen indiquant qu'une erreur s'est produite.
+                   - 'message': Un message décrivant l'erreur.
+                   - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
+
+    Raises:
+        Exception: Pour toute erreur inattendue qui pourrait se produire lors de la récupération des résultats ou des classements.
+    """
     try:
         lottery = Lottery.query.filter_by(id=lottery_id).one_or_none()
 
@@ -873,7 +1177,6 @@ def lottery_rank(lottery_id):
             ),
             500,
         )
-        raise Exception("Pas de resultats trouver")
     except Exception as e:
         return (
             jsonify(
@@ -891,6 +1194,27 @@ def lottery_rank(lottery_id):
 @jwt_required()
 @admin_role_required
 def manage_participants_remove():
+    """
+    Supprime la participation d'un utilisateur à un tirage de loterie.
+
+    Cette méthode permet de retirer un utilisateur de la liste des participants d'un tirage de loterie.
+    Elle vérifie d'abord si le tirage est encore actif avant d'effectuer la suppression.
+    Si l'utilisateur est trouvé, sa participation ainsi que les résultats associés sont supprimés.
+
+    Returns:
+        tuple: Un tuple contenant un objet JSON avec un message de confirmation
+               et un code de statut HTTP.
+               - En cas de succès (200):
+                   - 'message': Un message confirmant la suppression réussie de la participation.
+               - En cas d'erreur (400, 403 ou 404):
+                   - 'errors': Un booléen indiquant qu'une erreur s'est produite.
+                   - 'message': Un message décrivant l'erreur.
+               - En cas d'erreur inattendue (500):
+                   - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
+
+    Raises:
+        Exception: Pour toute erreur inattendue qui pourrait se produire lors de la suppression.
+    """
     try:
         data = request.get_json()
 
@@ -967,6 +1291,31 @@ def manage_participants_remove():
 @jwt_required()
 @admin_role_required
 def manage_particiants_add(lottery_id):
+    """
+    Ajoute un participant à un tirage de loterie.
+
+    Cette méthode permet d'ajouter un nouvel utilisateur en tant que participant à un tirage de loterie spécifique.
+    Elle vérifie d'abord si le tirage est actif et si l'utilisateur n'est pas déjà inscrit.
+    Si l'utilisateur n'existe pas, il sera créé, et sa participation sera enregistrée.
+
+    Args:
+        lottery_id (int): L'identifiant unique du tirage de loterie auquel le participant doit être ajouté.
+
+    Returns:
+        tuple: Un tuple contenant un objet JSON avec un message de confirmation
+               et un code de statut HTTP.
+               - En cas de succès (201):
+                   - 'message': Un message confirmant l'ajout réussi du participant.
+                   - 'entry_id': L'identifiant de l'entrée du participant.
+               - En cas d'erreur (403, 400 ou 404):
+                   - 'errors': Un booléen indiquant qu'une erreur s'est produite.
+                   - 'message': Un message décrivant l'erreur.
+                   - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
+
+    Raises:
+        ValidationError: En cas d'erreur de validation des données entrantes.
+        Exception: Pour toute erreur inattendue qui pourrait se produire lors de l'ajout du participant.
+    """
     try:
         data = request.get_json()
         entryAdminAddUserSchema = EntryAdminAddUserSchema()
@@ -1072,6 +1421,28 @@ def manage_particiants_add(lottery_id):
 @jwt_required()
 @admin_role_required
 def validate_lottery(lottery_id):
+    """
+    Valide un tirage de loterie et génère les résultats.
+
+    Cette méthode permet de valider un tirage de loterie en vérifiant les numéros gagnants et les numéros chanceux fournis.
+    Si les numéros ne sont pas fournis, des numéros aléatoires sont générés.
+    La méthode met également à jour le statut de la loterie et enregistre les résultats des participants.
+
+    Args:
+        lottery_id (int): L'identifiant unique du tirage de loterie à valider.
+
+    Returns:
+        tuple: Un tuple contenant un objet JSON avec un message de confirmation et un code de statut HTTP.
+            - En cas de succès (200):
+                - 'message': Un message confirmant que la génération des résultats a réussi.
+            - En cas d'erreur (400 ou 404):
+                - 'errors': Un booléen indiquant qu'une erreur s'est produite.
+                - 'message': Un message décrivant l'erreur.
+                - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
+
+    Raises:
+        Exception: Pour toute erreur inattendue qui pourrait se produire lors de la validation du tirage.
+    """
     try:
         data = request.get_json()
         lottery = Lottery.query.filter_by(id=lottery_id).one_or_none()
@@ -1204,7 +1575,6 @@ def validate_lottery(lottery_id):
             db.session.add(lottery_result)
             db.session.commit()
 
-            # Update lottery status
             if lottery.status == Status.EN_VALIDATION.value:
                 lottery.status = Status.TERMINE.value
             elif lottery.status == Status.SIMULATION.value:
@@ -1246,9 +1616,7 @@ def validate_lottery(lottery_id):
                 ranking_data = schema.load(
                     {
                         "lottery_result_id": lottery_result.id,
-                        "player_id": result[
-                            "player_id"
-                        ],  # Player ID must be part of formatted_results
+                        "player_id": result["player_id"],
                         "rank": result["rank"],
                         "score": result["score"],
                         "winnings": result["winnings"],
@@ -1294,6 +1662,32 @@ def validate_lottery(lottery_id):
 @jwt_required()
 @admin_role_required
 def get_lottery_results(lottery_id):
+    """
+    Récupère les résultats d'un tirage de loterie spécifié.
+
+    Cette méthode permet d'obtenir les numéros gagnants et les numéros chanceux d'un tirage de loterie spécifique en fonction de son identifiant.
+    Elle vérifie d'abord l'existence de la loterie, puis des résultats associés avant de renvoyer les informations demandées.
+
+    Args:
+        lottery_id (int): L'identifiant unique du tirage de loterie dont on souhaite récupérer les résultats.
+
+    Returns:
+        tuple: Un tuple contenant un objet JSON avec les détails du tirage de loterie et un code de statut HTTP.
+            - En cas de succès (200):
+                - 'lottery_name': Le nom du tirage de loterie.
+                - 'winning_numbers': Les numéros gagnants du tirage.
+                - 'lucky_numbers': Les numéros chanceux du tirage.
+            - En cas d'erreur (404):
+                - 'errors': Un booléen indiquant qu'une erreur s'est produite.
+                - 'message': Un message décrivant l'erreur.
+            - En cas d'erreur inattendue (500):
+                - 'errors': Un booléen indiquant qu'une erreur s'est produite.
+                - 'message': Un message indiquant qu'une erreur s'est produite lors de la récupération des résultats.
+                - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
+
+    Raises:
+        Exception: Pour toute erreur inattendue qui pourrait survenir lors de la récupération des résultats.
+    """
     try:
         lottery = Lottery.query.filter_by(id=lottery_id).one_or_none()
 
@@ -1346,6 +1740,31 @@ def get_lottery_results(lottery_id):
 @jwt_required()
 @admin_role_required
 def populate_fake_users(lottery_id):
+    """
+    Remplit la loterie spécifiée avec des utilisateurs fictifs.
+
+    Cette méthode permet d'ajouter des participants fictifs à un tirage de loterie spécifique en fonction de son identifiant.
+    Les utilisateurs fictifs sont générés aléatoirement et ajoutés tant que le nombre maximal de participants n'est pas atteint.
+
+    Args:
+        lottery_id (int): L'identifiant unique du tirage de loterie auquel ajouter des utilisateurs fictifs.
+
+    Returns:
+        tuple: Un tuple contenant un objet JSON avec un message de confirmation et un code de statut HTTP.
+            - En cas de succès (201):
+                - 'message': Un message indiquant que les participants fictifs ont été ajoutés.
+                - 'total_participants': Le nombre total de participants après ajout.
+            - En cas d'erreur (400):
+                - 'errors': Un booléen indiquant qu'une erreur s'est produite.
+                - 'message': Un message décrivant l'erreur (si le tirage n'est ni en simulation ni en cours).
+            - En cas d'erreur inattendue (500):
+                - 'errors': Un booléen indiquant qu'une erreur s'est produite.
+                - 'message': Un message indiquant qu'une erreur s'est produite lors de la génération des utilisateurs fictifs.
+                - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
+
+    Raises:
+        Exception: Pour toute erreur inattendue qui pourrait survenir lors de l'ajout des utilisateurs fictifs.
+    """
     try:
         lottery = Lottery.query.get_or_404(lottery_id)
 
@@ -1424,6 +1843,24 @@ def populate_fake_users(lottery_id):
 @jwt_required()
 @admin_role_required
 def logout_admin():
+    """
+    Déconnexion de l'administrateur.
+
+    Cette méthode permet à un administrateur de se déconnecter en révoquant le jeton JWT associé à la session en cours.
+    Une fois le jeton révoqué, l'administrateur ne pourra plus accéder aux ressources protégées sans se reconnecter.
+
+    Returns:
+        tuple: Un tuple contenant un objet JSON avec un message de confirmation et un code de statut HTTP.
+            - En cas de succès (200):
+                - 'message': Un message indiquant que la déconnexion a été effectuée avec succès.
+            - En cas d'erreur inattendue (500):
+                - 'errors': Un booléen indiquant qu'une erreur s'est produite.
+                - 'message': Un message indiquant qu'une erreur est survenue lors de la déconnexion.
+                - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
+
+    Raises:
+        Exception: Pour toute erreur inattendue qui pourrait survenir lors de la déconnexion.
+    """
     try:
         jti = get_jwt()["jti"]
         user_id = get_jwt_identity()

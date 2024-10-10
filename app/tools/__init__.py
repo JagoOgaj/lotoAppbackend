@@ -11,4 +11,5 @@ from .rank_tools import (
     distribute_remainder,
     structure_scores,
     calculate_jaccard_similarity,
+    jaccard_similarity,
 )
