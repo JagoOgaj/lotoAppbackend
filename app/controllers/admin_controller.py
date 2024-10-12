@@ -546,7 +546,7 @@ def lottery_create():
         data = request.get_json()
         lotteryCreateSchema = LotteryCreateSchema()
         data = lotteryCreateSchema.load(data)
-        existing_lottery = Lottery.query.filter_by(status=Status.EN_COUR.value).first()
+        existing_lottery = Lottery.query.filter_by(_status=Status.EN_COUR.value).first()
         if existing_lottery:
             if data["status"] not in [
                 Status.SIMULATION.value,
@@ -573,8 +573,8 @@ def lottery_create():
                 raise ValidationError(
                     "La date de fin ne peux pas etre inferieur ou egal à la date de debut"
                 )
-            if start_date < datetime.now():
-                raise ValidationError("Le debut doit commencer à partir de demain")
+            if start_date < datetime.now().replace(hour=0, minute=0, second=0, microsecond=0):
+                raise ValidationError("Le debut doit commencer à partir de aujourd'hui")
 
         if data["status"] == Status.SIMULATION.value:
             new_lottery = Lottery(
@@ -596,8 +596,11 @@ def lottery_create():
                 _reward_price=data["reward_price"],
                 _max_participants=data["max_participants"],
             )
-
-        send_email_to_users()
+        if data["status"] not in [
+                Status.SIMULATION.value,
+                Status.SIMULATION_TERMINE.value,
+            ]:
+            send_email_to_users()
         db.session.add(new_lottery)
         db.session.commit()
         return (
@@ -610,7 +613,7 @@ def lottery_create():
             jsonify(
                 {
                     "errors": True,
-                    "message": "Erreur dans la création du tirage",
+                    "message": err.messages[0],
                     "details": err.messages,
                 }
             ),
