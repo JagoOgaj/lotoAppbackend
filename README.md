@@ -121,8 +121,6 @@ Voici un diagramme représentant l'architecture du projet :
 
 ![Diagramme de l'architecture](images/packages_lotoappbackend.png)
 
-<img src="images/packages_lotoappbackend.png" alt="Diagramme de l'architecture" />
-
 ![Les différentes classe](images/classes_lotoappbackend.png)
 
 
