@@ -116,7 +116,17 @@ LotoAppfrontend est une application développée en Python qui permet aux utilis
 │   └── database.sql
 └── test/                           # Répertoire pour les tests unitaires (vide pour l'instant)
    ```
-   
+
+Voici un diagramme représentant l'architecture du projet :
+
+![Diagramme de l'architecture](images/packages_lotoappbackend.png)
+
+<img src="images/packages_lotoappbackend.png" alt="Diagramme de l'architecture" />
+
+![Les différentes classe](images/classes_lotoappbackend.png)
+
+
+
 ## Note
 
 Ce projet a été développé dans le cadre de la formation universitaire BUT3 FA Informatique,
