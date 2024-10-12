@@ -573,7 +573,9 @@ def lottery_create():
                 raise ValidationError(
                     "La date de fin ne peux pas etre inferieur ou egal à la date de debut"
                 )
-            if start_date < datetime.now().replace(hour=0, minute=0, second=0, microsecond=0):
+            if start_date < datetime.now().replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ):
                 raise ValidationError("Le debut doit commencer à partir de aujourd'hui")
 
         if data["status"] == Status.SIMULATION.value:
@@ -597,9 +599,9 @@ def lottery_create():
                 _max_participants=data["max_participants"],
             )
         if data["status"] not in [
-                Status.SIMULATION.value,
-                Status.SIMULATION_TERMINE.value,
-            ]:
+            Status.SIMULATION.value,
+            Status.SIMULATION_TERMINE.value,
+        ]:
             send_email_to_users()
         db.session.add(new_lottery)
         db.session.commit()

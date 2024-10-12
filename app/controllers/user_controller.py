@@ -602,7 +602,7 @@ def lottery_registry():
                 404,
             )
 
-        if lottery.status in [Status.TERMINE.value] or lottery.is_active:
+        if lottery.status in [Status.TERMINE.value] or not lottery.is_active:
             return (
                 jsonify(
                     {
