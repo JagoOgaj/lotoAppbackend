@@ -24,7 +24,7 @@ LotoAppfrontend est une application développée en Python qui permet aux utilis
 
 1. **Clonez le dépôt** :
 ```bash
-   git clone [https://github.com/JagoOgaj/LotoAppfrontend.git](https://github.com/JagoOgaj/lotoAppbackend.git)
+   git clone https://github.com/JagoOgaj/lotoAppbackend.git
    cd LotoAppfrontend
    ```
 
