@@ -47,23 +47,23 @@ LotoAppfrontend est une application développée en Python qui permet aux utilis
 
 ## Fonctionnalités
 
-|**Fonctionnalité**                                     |**Utilisateur**                                    |**Administrateur**                                |
-|-------------------------------------------------------|---------------------------------------------------|--------------------------------------------------|
-| Créer un compte                                       | Oui                                               | Oui                                              |
-| Modifier les informations du compte                   | Oui                                               | Oui                                              |
-| Modifier le mot de passe                              | Oui                                               | Oui                                              |
-| Participer à un tirage                                | Oui                                               | Non                                              |
-| Consulter les résultats d'un tirage                   | Oui                                               | Oui                                              |
-| Consulter l'historique des tirages                    | Oui                                               | Non                                              |
-| Recevoir des notifications (nouveau tirage,résultats) | Oui (par email si activé)                         | Non                                              |
-| Créer un tirage                                       | Non                                               | Oui                                              |
-| Modifier les informations d'un tirage                 | Non                                               | Oui                                              |
-| Supprimer un tirage                                   | Non                                               | Oui                                              |
-| Ajouter/Supprimer des utilisateurs dans un tirage     | Non                                               | Oui                                              |
-| Définir les résultats gagnants d'un tirage            | Non                                               | Oui                                              |
-| Consulter tous les tirages                            | Non                                               | Oui                                              |
-| Contacter l'assistance                                | Oui                                               | Oui                                              |
-
+| **Fonctionnalité**                                    | **Utilisateur**           | **Administrateur** |
+| ----------------------------------------------------- | ------------------------- | ------------------ |
+| Créer un compte                                       | Oui                       | Oui                |
+| Modifier les informations du compte                   | Oui                       | Oui                |
+| Modifier le mot de passe                              | Oui                       | Oui                |
+| Participer à un tirage                                | Oui                       | Non                |
+| Consulter les résultats d'un tirage                   | Oui                       | Oui                |
+| Consulter l'historique des tirages                    | Oui                       | Non                |
+| Recevoir des notifications                            | Oui (par email si activé) | Non                |
+| Générer un ticket de récompense (si gain)             | Oui                       | Non                |
+| Créer un tirage                                       | Non                       | Oui                |
+| Modifier les informations d'un tirage                 | Non                       | Oui                |
+| Supprimer un tirage                                   | Non                       | Oui                |
+| Ajouter/Supprimer des utilisateurs dans un tirage     | Non                       | Oui                |
+| Définir les résultats gagnants d'un tirage            | Non                       | Oui                |
+| Consulter tous les tirages                            | Non                       | Oui                |
+| Contacter l'assistance                                | Oui                       | Oui                |
 
 ## Architecture
 ```bash
