@@ -22,7 +22,7 @@ from flask_jwt_extended import (
 )
 from app.extensions import db, pwd_context
 from app.helpers import add_token_to_database, revoke_token
-from app.tools.status_tools import Status
+from app.tools import Status, generate_pdf
 from datetime import datetime
 
 user_bp = Blueprint("user", __name__)
@@ -42,8 +42,8 @@ def login_user():
         Response:
             - Si l'authentification réussit, renvoie un message de succès avec les tokens.
             - Si l'utilisateur n'est pas trouvé, renvoie un message d'erreur 404.
-            - Si le mot de passe est incorrect, renvoie un message d'erreur 401.
-            - Si une erreur de validation se produit, renvoie un message d'erreur 400 avec des détails.
+            - Si le mot de passe est incorrect, renvoie un message d'erreur 404.
+            - Si une erreur de validation se produit, renvoie un message d'erreur 404 avec des détails.
 
     Example:
         Pour utiliser cette fonction, envoyez une requête POST à l'URL `/login`
@@ -77,7 +77,7 @@ def login_user():
         if not pwd_context.verify(password, user.password_hash):
             return (
                 jsonify({"message": "Mot de passe incorrect", "errors": True}),
-                401,
+                404,
             )
 
         access_token = create_access_token(identity=user.id)
@@ -106,7 +106,7 @@ def login_user():
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
 
     except Exception as e:
@@ -117,7 +117,7 @@ def login_user():
                     "errors": True,
                 }
             ),
-            400,
+            404,
         )
 
 
@@ -134,9 +134,9 @@ def register_user():
     Returns:
         Response:
             - Si l'inscription réussit, renvoie un message de succès avec les tokens.
-            - Si l'email est déjà utilisé, renvoie un message d'erreur 400.
-            - Si une erreur de validation se produit, renvoie un message d'erreur 400 avec des détails.
-            - Si une autre erreur se produit, renvoie un message d'erreur 500.
+            - Si l'email est déjà utilisé, renvoie un message d'erreur 404.
+            - Si une erreur de validation se produit, renvoie un message d'erreur 404 avec des détails.
+            - Si une autre erreur se produit, renvoie un message d'erreur 404.
 
     Example:
         Pour utiliser cette fonction, envoyez une requête POST à l'URL `/register`
@@ -166,7 +166,7 @@ def register_user():
                         "message": "L'email est déjà utilisé.",
                     }
                 ),
-                400,
+                404,
             )
 
         new_user = User(
@@ -206,7 +206,7 @@ def register_user():
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
 
     except Exception as e:
@@ -218,7 +218,7 @@ def register_user():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -237,8 +237,8 @@ def account_info():
         Response:
             - 200 OK: Si les informations de l'utilisateur sont récupérées avec succès.
             - 404 Not Found: Si aucun utilisateur n'est trouvé pour l'identité fournie.
-            - 400 Bad Request: En cas d'erreur de validation lors de la récupération des informations.
-            - 500 Internal Server Error: Pour toute autre erreur survenant lors du traitement.
+            - 404 Bad Request: En cas d'erreur de validation lors de la récupération des informations.
+            - 404 Internal Server Error: Pour toute autre erreur survenant lors du traitement.
 
     Example:
         Pour utiliser cette fonction, envoyez une requête GET à l'URL `/account-info`
@@ -284,7 +284,7 @@ def account_info():
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
     except Exception as e:
         return (
@@ -295,7 +295,7 @@ def account_info():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -315,8 +315,8 @@ def update_info():
         Response:
             - 200 OK: Si les informations de l'utilisateur ont été mises à jour avec succès.
             - 404 Not Found: Si aucun utilisateur n'est trouvé pour l'identité fournie.
-            - 400 Bad Request: En cas d'erreur de validation lors de la mise à jour des informations.
-            - 500 Internal Server Error: Pour toute autre erreur survenant lors du traitement.
+            - 404 Bad Request: En cas d'erreur de validation lors de la mise à jour des informations.
+            - 404 Internal Server Error: Pour toute autre erreur survenant lors du traitement.
 
     Example:
         Pour utiliser cette fonction, envoyez une requête PUT à l'URL `/update-info`
@@ -377,7 +377,7 @@ def update_info():
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
     except Exception as e:
         return (
@@ -388,7 +388,7 @@ def update_info():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -410,7 +410,7 @@ def update_password():
             - 400 Bad Request: En cas d'ancien mot de passe incorrect,
               ou si le nouveau mot de passe est identique à l'ancien.
             - 400 Bad Request: En cas d'erreur de validation lors de la mise à jour du mot de passe.
-            - 500 Internal Server Error: Pour toute autre erreur survenant lors du traitement.
+            - 404 Internal Server Error: Pour toute autre erreur survenant lors du traitement.
 
     Example:
         Pour utiliser cette fonction, envoyez une requête PUT à l'URL `/update-password`
@@ -486,7 +486,7 @@ def update_password():
                     "details": {"new_password": err.messages.get("new_password", [])},
                 }
             ),
-            400,
+            404,
         )
     except Exception as e:
         return (
@@ -497,7 +497,7 @@ def update_password():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -514,7 +514,7 @@ def logout_user():
     Returns:
         Response:
             - 200 OK: Si la déconnexion a réussi.
-            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+            - 404 Internal Server Error: Pour toute erreur survenant lors du traitement.
 
     Example:
         Pour utiliser cette fonction, envoyez une requête POST à l'URL `/logout`
@@ -542,7 +542,7 @@ def logout_user():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -561,7 +561,7 @@ def lottery_registry():
             - 201 Created: Si l'inscription à la loterie est réussie.
             - 400 Bad Request: Si la loterie n'est pas active ou si l'enregistrement échoue.
             - 404 Not Found: Si l'utilisateur ou la loterie n'est pas trouvé.
-            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+            - 404 Internal Server Error: Pour toute erreur survenant lors du traitement.
 
     Example:
         Pour utiliser cette fonction, envoyez une requête POST à l'URL `/lottery-registry`
@@ -610,7 +610,7 @@ def lottery_registry():
                         "errors": True,
                     }
                 ),
-                400,
+                404,
             )
 
         new_entry = Entry(
@@ -641,7 +641,7 @@ def lottery_registry():
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
     except Exception as e:
         return (
@@ -652,7 +652,7 @@ def lottery_registry():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -673,7 +673,7 @@ def get_lottery_results(lottery_id):
         Response:
             - 200 OK: Si les résultats de la loterie sont trouvés, renvoie les détails de la loterie.
             - 404 Not Found: Si la loterie ou ses résultats ne sont pas trouvés.
-            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+            - 404 Internal Server Error: Pour toute erreur survenant lors du traitement.
 
     Example:
         Pour utiliser cette fonction, envoyez une requête GET à l'URL
@@ -733,7 +733,7 @@ def get_lottery_results(lottery_id):
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -752,7 +752,7 @@ def lottery_history_user():
             - 200 OK: Si l'historique des participations est récupéré avec succès.
             - 400 Bad Request: Si aucune participation n'est trouvée pour l'utilisateur.
             - 404 Not Found: Si l'utilisateur n'est pas trouvé.
-            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+            - 404 Internal Server Error: Pour toute erreur survenant lors du traitement.
 
     Example:
         Pour utiliser cette fonction, envoyez une requête GET à l'URL
@@ -796,7 +796,7 @@ def lottery_history_user():
                         "emptyEntries": True,
                     }
                 ),
-                400,
+                404,
             )
 
         lotteries = []
@@ -849,7 +849,7 @@ def lottery_history_user():
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
 
     except Exception as e:
@@ -861,7 +861,7 @@ def lottery_history_user():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -881,7 +881,7 @@ def get_current_lottery():
             - 400 Bad Request: Si aucune loterie en cours n'est trouvée ou si
               l'utilisateur est déjà inscrit à cette loterie.
             - 404 Not Found: Si l'utilisateur n'est pas trouvé.
-            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+            - 404 Internal Server Error: Pour toute erreur survenant lors du traitement.
 
     Example:
         Pour utiliser cette fonction, envoyez une requête GET à l'URL
@@ -931,7 +931,7 @@ def get_current_lottery():
                         "message": "Vous êtes déjà inscrit à cette loterie.",
                     }
                 ),
-                400,
+                404,
             )
 
         lottery_schema = LotteryOverviewSchema()
@@ -948,7 +948,7 @@ def get_current_lottery():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -972,7 +972,7 @@ def lottery_details(lottery_id):
             - 200 OK: Si les détails de la loterie sont récupérés avec succès.
             - 400 Bad Request: Si une erreur se produit lors de la récupération.
             - 404 Not Found: Si la loterie avec l'identifiant fourni n'est pas trouvée.
-            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+            - 404 Internal Server Error: Pour toute erreur survenant lors du traitement.
 
     Example:
         Pour utiliser cette fonction, envoyez une requête GET à l'URL
@@ -1055,7 +1055,7 @@ def lottery_details(lottery_id):
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -1076,7 +1076,7 @@ def lottery_rank(lottery_id):
         Response:
             - 200 OK: Si le classement des participants est récupéré avec succès.
             - 404 Not Found: Si la loterie ou le classement n'est pas trouvé.
-            - 500 Internal Server Error: Pour toute erreur survenant lors du traitement.
+            - 404 Internal Server Error: Pour toute erreur survenant lors du traitement.
 
     Example:
         Pour utiliser cette fonction, envoyez une requête GET à l'URL
@@ -1095,7 +1095,7 @@ def lottery_rank(lottery_id):
                     "name": "Jane Smith",
                     "rank": 2,
                     "score": 90,
-                    "winnings": 500
+                    "winnings": 404
                 }
             ],
             "currentUser": {
@@ -1136,11 +1136,11 @@ def lottery_rank(lottery_id):
             return (
                 jsonify(
                     {
-                        "message": "No rankings found for this draw.",
+                        "message": "Aucun gagnant",
                         "errors": True,
                     }
                 ),
-                404,
+                400,
             )
         schema = LotteryWinerSchema(many=True)
         schemaCurrentUser = LotteryWinerSchema()
@@ -1171,12 +1171,15 @@ def lottery_rank(lottery_id):
         validated_results = schema.dump(results)
         if user_result is not None:
             validated_user_results = schemaCurrentUser.dump(user_result)
-        return jsonify(
-            {
-                "message": "Rankings retrieved successfully",
-                "data": validated_results,
-                "currentUser": validated_user_results,
-            }
+        return (
+            jsonify(
+                {
+                    "message": "Classement",
+                    "data": validated_results,
+                    "currentUser": validated_user_results,
+                }
+            ),
+            200,
         )
 
     except Exception as e:
@@ -1188,5 +1191,61 @@ def lottery_rank(lottery_id):
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
+
+
+@user_bp.route("/reward-pdf/<int:lottery_id>", methods=["POST"])
+@jwt_required()
+def reward_pdf(lottery_id):
+    """
+    Génère un PDF de récompense pour l'utilisateur actuel basé sur l'identifiant du tirage.
+
+    Cette fonction traite une requête POST pour générer un PDF qui contient les détails de la
+    récompense d'un utilisateur pour un tirage de loterie spécifique. Elle vérifie d'abord si
+    le tirage et les résultats sont disponibles pour l'utilisateur, puis appelle la fonction
+    `generate_pdf` pour créer le PDF. Si des erreurs surviennent à n'importe quelle étape,
+    un message d'erreur approprié est retourné.
+
+    Args:
+        lottery_id (int): L'identifiant du tirage de loterie pour lequel le PDF de récompense est demandé.
+
+    Returns:
+        Response: Un objet JSON contenant le PDF à télécharger ou un message d'erreur.
+
+    Raises:
+        Exception: Si une erreur se produit lors de la récupération des données ou de la génération du PDF.
+    """
+    try:
+        user = get_current_user()
+        lottery = Lottery.query.filter_by(id=lottery_id).one_or_none()
+        if not lottery:
+            return jsonify({"message": "Aucun tirage trouver", "errors": True}), 404
+        result = LotteryResult.query.filter_by(lottery_id=lottery_id).one_or_none()
+        if not result:
+            return (
+                jsonify(
+                    {
+                        "message": "Aucun resultat trouvé pour cet utilisateur dans ce tirage.",
+                        "errors": True,
+                    }
+                ),
+                404,
+            )
+        ranking = LotteryRanking.query.filter_by(
+            lottery_result_id=result.id, player_id=user.id
+        ).one_or_none()
+
+        if not ranking:
+            return (
+                jsonify(
+                    {
+                        "message": "Aucune récompense trouvée pour cet utilisateur dans ce tirage.",
+                        "errors": True,
+                    }
+                ),
+                404,
+            )
+        return generate_pdf(user.full_name, ranking.winnings, lottery.name)
+    except Exception as e:
+        return jsonify({"message": str(e), "errors": True}), 404

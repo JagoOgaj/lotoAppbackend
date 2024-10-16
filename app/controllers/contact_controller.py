@@ -39,7 +39,7 @@ def contact_us():
         schema = ContactUsSchema()
         data = schema.load(data)
         email_sender_contact_us(data["email"], data["message"])
-        return jsonify({"message": "Merci pour votre message"})
+        return jsonify({"message": "Merci pour votre message"}), 200
     except ValidationError as e:
         return (
             jsonify(

@@ -31,7 +31,7 @@ def refresh():
         tuple: Un tuple contenant un objet JSON avec le nouveau jeton d'accès et un code de statut HTTP.
             - En cas de succès (201):
                 - 'access_token': Le nouveau jeton d'accès généré.
-            - En cas d'erreur (422):
+            - En cas d'erreur (404):
                 - 'message': Un message indiquant qu'une erreur est survenue lors du rafraîchissement du jeton.
                 - 'errors': Un booléen indiquant qu'une erreur s'est produite.
                 - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
@@ -53,7 +53,7 @@ def refresh():
                     "details": str(e),
                 }
             ),
-            422,
+            404,
         )
 
 
@@ -70,7 +70,7 @@ def revoke_access_token():
         tuple: Un tuple contenant un objet JSON avec un message de confirmation et un code de statut HTTP.
             - En cas de succès (200):
                 - 'message': Un message indiquant que le jeton a été révoqué avec succès.
-            - En cas d'erreur (422):
+            - En cas d'erreur (404):
                 - 'message': Un message indiquant qu'une erreur s'est produite lors de la révocation du jeton.
                 - 'errors': Un booléen indiquant qu'une erreur s'est produite.
                 - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
@@ -88,7 +88,7 @@ def revoke_access_token():
             jsonify(
                 {"message": "Failed to revoke token", "errors": True, "details": str(e)}
             ),
-            422,
+            404,
         )
 
 
@@ -105,7 +105,7 @@ def revoke_refresh_token():
         tuple: Un tuple contenant un objet JSON avec un message de confirmation et un code de statut HTTP.
             - En cas de succès (200):
                 - 'message': Un message indiquant que le jeton de rafraîchissement a été révoqué avec succès.
-            - En cas d'erreur (422):
+            - En cas d'erreur (404):
                 - 'message': Un message indiquant qu'une erreur s'est produite lors de la révocation du jeton.
                 - 'errors': Un booléen indiquant qu'une erreur s'est produite.
                 - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
@@ -119,12 +119,15 @@ def revoke_refresh_token():
         revoke_token(jti, user_id)
         return jsonify({"message": "Refresh token revoked"}), 200
     except Exception as e:
-        return jsonify(
-            {
-                "message": "Une erreur est survnue dans le revoke du token",
-                "errors": True,
-                "details": str(e),
-            }
+        return (
+            jsonify(
+                {
+                    "message": "Une erreur est survnue dans le revoke du token",
+                    "errors": True,
+                    "details": str(e),
+                }
+            ),
+            404,
         )
 
 
@@ -186,12 +189,15 @@ def get_role():
             return jsonify({"message": "User not found"}), 404
         return jsonify({"role": user.role_name}), 200
     except Exception as e:
-        return jsonify(
-            {
-                "message": "une erreur est survenue dans la récupération du role",
-                "errors": True,
-                "details": str(e),
-            }
+        return (
+            jsonify(
+                {
+                    "message": "une erreur est survenue dans la récupération du role",
+                    "errors": True,
+                    "details": str(e),
+                }
+            ),
+            404,
         )
 
 

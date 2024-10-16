@@ -13,3 +13,4 @@ from .rank_tools import (
     calculate_jaccard_similarity,
     jaccard_similarity,
 )
+from .pdf_tools import generate_pdf

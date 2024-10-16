@@ -34,7 +34,7 @@ def create_app() -> Flask:
         >>> app = create_app()  # Crée l'application Flask
         >>> app.run()  # Démarre l'application
     """
-    app: Flask = Flask(__name__)
+    app: Flask = Flask(__name__, template_folder="templates/")
     app.config.from_object(Config)
 
     # Init Cors

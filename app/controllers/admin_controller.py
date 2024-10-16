@@ -58,7 +58,7 @@ def login_admin():
 
     En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
     - 404 si l'utilisateur n'est pas trouvé,
-    - 403 si l'utilisateur n'est pas administrateur,
+    - 404 si l'utilisateur n'est pas administrateur,
     - 401 si le mot de passe est incorrect,
     - 400 en cas d'erreur de validation des champs ou autre exception.
 
@@ -90,13 +90,13 @@ def login_admin():
                         "errors": True,
                     }
                 ),
-                403,
+                404,
             )
 
         if not pwd_context.verify(password, userAdmin.password_hash):
             return (
                 jsonify({"message": "Mot de passe incorrect", "errors": True}),
-                401,
+                404,
             )
 
         access_token = create_access_token(identity=userAdmin.id)
@@ -124,7 +124,7 @@ def login_admin():
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
 
     except Exception as e:
@@ -135,7 +135,7 @@ def login_admin():
                     "errors": True,
                 }
             ),
-            400,
+            404,
         )
 
 
@@ -180,7 +180,7 @@ def create_admin():
                         "message": "L'email est déjà utilisé.",
                     }
                 ),
-                400,
+                404,
             )
 
         newAdmin = User(
@@ -197,15 +197,34 @@ def create_admin():
         return (jsonify({"messgae": "Utilisateyr creer"}), 201)
 
     except ValidationError as err:
-        return jsonify({"message": "Une erreur est survenue", "details": err.messages})
+        return (
+            jsonify({"message": "Une erreur est survenue", "details": err.messages}),
+            404,
+        )
     except Exception as e:
-        return jsonify({"message": "une erreur est survenu", "details": str(e)})
+        return jsonify({"message": "une erreur est survenu", "details": str(e)}), 404
 
 
 @admin_bp.route("/account-info", methods=["GET"])
 @jwt_required()
 @admin_role_required
 def account_info():
+    """
+    Récupère les informations de compte de l'utilisateur administrateur actuel.
+
+    Cette fonction est protégée par les décorateurs JWT et de rôle administrateur,
+    et permet de retourner un aperçu des informations de compte de l'utilisateur
+    administrateur connecté. Si aucun utilisateur n'est trouvé ou si une erreur survient,
+    des messages d'erreur sont renvoyés.
+
+    Returns:
+        - Un objet JSON contenant les informations de l'utilisateur administrateur
+          en cas de succès (statut 200).
+        - Un objet JSON avec un message d'erreur et un statut 404 si aucun utilisateur
+          n'est trouvé ou si une erreur se produit lors de la récupération des informations.
+        - Un objet JSON détaillant les erreurs de validation ou toute autre exception
+          rencontrée.
+    """
     try:
         userAdmin = get_current_user()
 
@@ -227,7 +246,7 @@ def account_info():
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
     except Exception as e:
         return (
@@ -238,7 +257,7 @@ def account_info():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -262,8 +281,8 @@ def update_info():
 
     En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
     - 404 si aucun utilisateur n'est trouvé.
-    - 400 en cas d'erreur de validation des données.
-    - 500 pour toute autre exception non prévue.
+    - 404 en cas d'erreur de validation des données.
+    - 404 pour toute autre exception non prévue.
 
     Retourne :
         - 200 avec les informations de l'utilisateur administrateur en cas de succès.
@@ -306,7 +325,7 @@ def update_info():
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
     except Exception as e:
         return (
@@ -317,7 +336,7 @@ def update_info():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -344,9 +363,9 @@ def update_password():
 
     En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
     - 404 si aucun utilisateur n'est trouvé.
-    - 400 si l'ancien mot de passe est incorrect ou si le nouveau mot de passe est le même que l'ancien.
-    - 400 en cas d'erreur de validation des données.
-    - 500 pour toute autre exception non prévue.
+    - 404 si l'ancien mot de passe est incorrect ou si le nouveau mot de passe est le même que l'ancien.
+    - 404 en cas d'erreur de validation des données.
+    - 404 pour toute autre exception non prévue.
 
     Retourne :
         - 200 avec un message de succès si le mot de passe est mis à jour.
@@ -378,7 +397,7 @@ def update_password():
                         "errors": True,
                     }
                 ),
-                400,
+                404,
             )
 
         if pwd_context.verify(userAdmin_data["new_password"], userAdmin.password_hash):
@@ -389,7 +408,7 @@ def update_password():
                         "errors": True,
                     }
                 ),
-                400,
+                404,
             )
 
         userAdmin.password_hash = userAdmin_data["new_password"]
@@ -408,7 +427,7 @@ def update_password():
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
     except Exception as e:
         return (
@@ -419,7 +438,7 @@ def update_password():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -447,7 +466,7 @@ def delete_lottery(lottery_id):
 
     En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
     - 404 si aucune loterie n'est trouvée avec l'ID fourni.
-    - 500 pour toute autre erreur rencontrée pendant le processus de suppression.
+    - 404 pour toute autre erreur rencontrée pendant le processus de suppression.
 
     Retourne :
         - 200 avec un message de succès si la suppression est effectuée avec succès.
@@ -506,7 +525,7 @@ def delete_lottery(lottery_id):
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -531,8 +550,8 @@ def lottery_create():
     7. Valide et sauvegarde les modifications dans la base de données.
 
     En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
-    - 400 si les données sont invalides ou si un tirage est déjà en cours.
-    - 500 pour toute autre exception non prévue.
+    - 404 si les données sont invalides ou si un tirage est déjà en cours.
+    - 404 pour toute autre exception non prévue.
 
     Retourne :
         - 201 avec un message de succès si le tirage est créé.
@@ -619,7 +638,7 @@ def lottery_create():
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
 
     except Exception as e:
@@ -631,7 +650,7 @@ def lottery_create():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -663,8 +682,8 @@ def update_lottery(lottery_id):
 
     En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
     - 404 si la loterie n'est pas trouvée ou si les données envoyées sont invalides.
-    - 400 pour les erreurs de validation des données.
-    - 500 pour toute autre exception non prévue.
+    - 404 pour les erreurs de validation des données.
+    - 404 pour toute autre exception non prévue.
 
     Retourne :
         - 200 avec un message de succès si les informations de la loterie ont été mises à jour.
@@ -688,7 +707,7 @@ def update_lottery(lottery_id):
 
         if "name" in lottery_data:
             lottery.name = lottery_data["name"]
-        # Vérification des dates
+
         if "start_date" in lottery_data and "end_date" in lottery_data:
             start_date = datetime.strptime(lottery_data["start_date"], "%Y-%m-%d")
             end_date = datetime.strptime(lottery_data["end_date"], "%Y-%m-%d")
@@ -830,7 +849,7 @@ def update_lottery(lottery_id):
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
     except Exception as e:
         return (
@@ -841,7 +860,7 @@ def update_lottery(lottery_id):
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -864,8 +883,8 @@ def lottery_list():
     4. Renvoie la liste des loteries avec un message de succès.
 
     En cas d'erreur, renvoie un message approprié avec le code HTTP correspondant :
-    - 400 pour les erreurs de validation lors de la récupération des loteries.
-    - 500 pour toute autre exception non prévue.
+    - 404 pour les erreurs de validation lors de la récupération des loteries.
+    - 404 pour toute autre exception non prévue.
 
     Retourne :
         - 200 avec un message de succès et la liste des tirages.
@@ -908,7 +927,7 @@ def lottery_list():
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
 
     except Exception as e:
@@ -920,7 +939,7 @@ def lottery_list():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -946,7 +965,7 @@ def lottery_details(lottery_id):
                    - 'message': Un message confirmant la récupération des détails de la loterie.
                    - 'data': Les détails de la loterie sous forme de dictionnaire.
                    - 'numbers': Un dictionnaire contenant les numéros gagnants et les numéros chanceux.
-               - En cas d'erreur (404, 400 ou 500):
+               - En cas d'erreur (404):
                    - 'errors': Un booléen indiquant qu'une erreur s'est produite.
                    - 'message': Un message décrivant l'erreur.
                    - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
@@ -1005,7 +1024,7 @@ def lottery_details(lottery_id):
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
     except Exception as e:
         return (
@@ -1016,7 +1035,7 @@ def lottery_details(lottery_id):
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -1039,7 +1058,7 @@ def participants_list(lottery_id):
                - En cas de succès (200):
                    - 'message': Un message confirmant la récupération réussie de la liste des participants.
                    - 'data': Une liste d'objets représentant les participants de la loterie.
-               - En cas d'erreur (400 ou 500):
+               - En cas d'erreur (404):
                    - 'errors': Un booléen indiquant qu'une erreur s'est produite.
                    - 'message': Un message décrivant l'erreur.
                    - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
@@ -1073,7 +1092,7 @@ def participants_list(lottery_id):
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
     except Exception as e:
         return (
@@ -1084,7 +1103,7 @@ def participants_list(lottery_id):
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -1108,7 +1127,7 @@ def lottery_rank(lottery_id):
                - En cas de succès (200):
                    - 'message': Un message confirmant la récupération réussie des classements.
                    - 'data': Une liste d'objets représentant les classements des participants.
-               - En cas d'erreur (404 ou 500):
+               - En cas d'erreur (404):
                    - 'errors': Un booléen indiquant qu'une erreur s'est produite.
                    - 'message': Un message décrivant l'erreur.
                    - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
@@ -1121,7 +1140,7 @@ def lottery_rank(lottery_id):
 
         if not lottery:
             return (
-                jsonify({"errors": True, "message": "Lottery draw not found."}),
+                jsonify({"errors": True, "message": "Pas de lottery trouver"}),
                 404,
             )
 
@@ -1140,7 +1159,7 @@ def lottery_rank(lottery_id):
             return (
                 jsonify(
                     {
-                        "message": "No rankings found for this draw.",
+                        "message": "Pas de classment pour ce tirage",
                         "errors": True,
                     }
                 ),
@@ -1164,11 +1183,14 @@ def lottery_rank(lottery_id):
 
         validated_results = schema.dump(results)
 
-        return jsonify(
-            {
-                "message": "Rankings retrieved successfully",
-                "data": validated_results,
-            }
+        return (
+            jsonify(
+                {
+                    "message": "Classement trouver",
+                    "data": validated_results,
+                }
+            ),
+            200,
         )
 
     except Exception as e:
@@ -1176,11 +1198,11 @@ def lottery_rank(lottery_id):
             jsonify(
                 {
                     "errors": True,
-                    "message": "An error occurred during the draw validation.",
+                    "message": "Une erreur est survenue",
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
     except Exception as e:
         return (
@@ -1191,7 +1213,7 @@ def lottery_rank(lottery_id):
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -1211,7 +1233,7 @@ def manage_participants_remove():
                et un code de statut HTTP.
                - En cas de succès (200):
                    - 'message': Un message confirmant la suppression réussie de la participation.
-               - En cas d'erreur (400, 403 ou 404):
+               - En cas d'erreur (404):
                    - 'errors': Un booléen indiquant qu'une erreur s'est produite.
                    - 'message': Un message décrivant l'erreur.
                - En cas d'erreur inattendue (500):
@@ -1232,7 +1254,7 @@ def manage_participants_remove():
                         "message": "L'ID du tirage est requis.",
                     }
                 ),
-                400,
+                404,
             )
 
         lottery = Lottery.query.get_or_404(lottery_id)
@@ -1244,7 +1266,7 @@ def manage_participants_remove():
                         "errors": True,
                     }
                 ),
-                403,
+                404,
             )
 
         user_id = data.get("user_id")
@@ -1288,7 +1310,7 @@ def manage_participants_remove():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -1312,7 +1334,7 @@ def manage_particiants_add(lottery_id):
                - En cas de succès (201):
                    - 'message': Un message confirmant l'ajout réussi du participant.
                    - 'entry_id': L'identifiant de l'entrée du participant.
-               - En cas d'erreur (403, 400 ou 404):
+               - En cas d'erreur (404):
                    - 'errors': Un booléen indiquant qu'une erreur s'est produite.
                    - 'message': Un message décrivant l'erreur.
                    - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
@@ -1335,10 +1357,10 @@ def manage_particiants_add(lottery_id):
                         "errors": True,
                     }
                 ),
-                403,
+                404,
             )
         user = User.query.filter_by(
-            _email=entry_data["user"]["email"], _role_id=2
+            _email=entry_data["user"]["email"],
         ).one_or_none()
         if user:
             return (
@@ -1375,7 +1397,7 @@ def manage_particiants_add(lottery_id):
                         "message": "L'utilisateur est déjà inscrit à ce tirage.",
                     }
                 ),
-                400,
+                404,
             )
 
         new_entry = Entry(
@@ -1407,7 +1429,7 @@ def manage_particiants_add(lottery_id):
                     "details": err.messages,
                 }
             ),
-            400,
+            404,
         )
     except Exception as e:
         return (
@@ -1418,7 +1440,7 @@ def manage_particiants_add(lottery_id):
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -1440,7 +1462,7 @@ def validate_lottery(lottery_id):
         tuple: Un tuple contenant un objet JSON avec un message de confirmation et un code de statut HTTP.
             - En cas de succès (200):
                 - 'message': Un message confirmant que la génération des résultats a réussi.
-            - En cas d'erreur (400 ou 404):
+            - En cas d'erreur (404):
                 - 'errors': Un booléen indiquant qu'une erreur s'est produite.
                 - 'message': Un message décrivant l'erreur.
                 - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
@@ -1523,16 +1545,19 @@ def validate_lottery(lottery_id):
                         404,
                     )
                 if not all(1 <= num <= 9 for num in lucky_numbers_list):
-                    return jsonify(
-                        {
-                            "message": "Les numéros chanceux doivent être entre 1 et 9.",
-                            "errors": True,
-                            "details": {
-                                "lucky_numbers": [
-                                    "Les numéros chanceux doivent être entre 1 et 9."
-                                ]
-                            },
-                        }
+                    return (
+                        jsonify(
+                            {
+                                "message": "Les numéros chanceux doivent être entre 1 et 9.",
+                                "errors": True,
+                                "details": {
+                                    "lucky_numbers": [
+                                        "Les numéros chanceux doivent être entre 1 et 9."
+                                    ]
+                                },
+                            }
+                        ),
+                        404,
                     )
 
                 if len(set(winning_numbers_list)) != 5:
@@ -1582,8 +1607,10 @@ def validate_lottery(lottery_id):
 
             if lottery.status == Status.EN_VALIDATION.value:
                 lottery.status = Status.TERMINE.value
+                db.session.commit()
             elif lottery.status == Status.SIMULATION.value:
                 lottery.status = Status.SIMULATION_TERMINE.value
+                db.session.commit()
 
             lottery_result = (
                 db.session.query(LotteryResult).filter_by(lottery_id=lottery_id).first()
@@ -1644,10 +1671,10 @@ def validate_lottery(lottery_id):
                 jsonify(
                     {
                         "errors": True,
-                        "message": "The draw must have a status of 'EN_VALIDATION' or 'SIMULATION' to be validated.",
+                        "message": "Le tirage doit etre en validation ou en simulation",
                     }
                 ),
-                400,
+                404,
             )
 
     except Exception as e:
@@ -1655,11 +1682,11 @@ def validate_lottery(lottery_id):
             jsonify(
                 {
                     "errors": True,
-                    "message": "An error occurred during the draw validation.",
+                    "message": "Une erreur est survenue",
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -1685,7 +1712,7 @@ def get_lottery_results(lottery_id):
             - En cas d'erreur (404):
                 - 'errors': Un booléen indiquant qu'une erreur s'est produite.
                 - 'message': Un message décrivant l'erreur.
-            - En cas d'erreur inattendue (500):
+            - En cas d'erreur inattendue (404):
                 - 'errors': Un booléen indiquant qu'une erreur s'est produite.
                 - 'message': Un message indiquant qu'une erreur s'est produite lors de la récupération des résultats.
                 - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
@@ -1737,7 +1764,7 @@ def get_lottery_results(lottery_id):
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -1759,7 +1786,7 @@ def populate_fake_users(lottery_id):
             - En cas de succès (201):
                 - 'message': Un message indiquant que les participants fictifs ont été ajoutés.
                 - 'total_participants': Le nombre total de participants après ajout.
-            - En cas d'erreur (400):
+            - En cas d'erreur (404):
                 - 'errors': Un booléen indiquant qu'une erreur s'est produite.
                 - 'message': Un message décrivant l'erreur (si le tirage n'est ni en simulation ni en cours).
             - En cas d'erreur inattendue (500):
@@ -1781,7 +1808,7 @@ def populate_fake_users(lottery_id):
                         "message": "Ce tirage n'est ni en simulation ni en cours.",
                     }
                 ),
-                400,
+                404,
             )
         i = 0
         while i <= (lottery.max_participants - lottery.participant_count):
@@ -1840,7 +1867,7 @@ def populate_fake_users(lottery_id):
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )
 
 
@@ -1858,7 +1885,7 @@ def logout_admin():
         tuple: Un tuple contenant un objet JSON avec un message de confirmation et un code de statut HTTP.
             - En cas de succès (200):
                 - 'message': Un message indiquant que la déconnexion a été effectuée avec succès.
-            - En cas d'erreur inattendue (500):
+            - En cas d'erreur inattendue (404):
                 - 'errors': Un booléen indiquant qu'une erreur s'est produite.
                 - 'message': Un message indiquant qu'une erreur est survenue lors de la déconnexion.
                 - 'details': Des informations supplémentaires sur l'erreur (le cas échéant).
@@ -1880,5 +1907,5 @@ def logout_admin():
                     "details": str(e),
                 }
             ),
-            500,
+            404,
         )

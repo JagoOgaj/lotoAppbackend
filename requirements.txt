@@ -10,3 +10,7 @@ python-dotenv
 flask-cors
 faker
 pytest
+pdfkit
+qrcode
+Pillow
+pytz

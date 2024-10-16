@@ -44,6 +44,8 @@ class Config:
 
         MAIL_APP (str): Adresse email de l'application, utilisée pour l'envoi d'emails.
 
+        PATH_WHHTMLTOPDF (str): Chemin de l'executable wkhtmltopdf
+
     Exemple:
         >>> config = Config()
         >>> print(config.SQLALCHEMY_DATABASE_URI)
@@ -59,3 +61,6 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=20)
     APP_EMAIL_PASSWORD: str = os.environ.get("APP_PASSWORD")
     MAIL_APP: str = os.environ.get("MAIL_APP")
+    PATH_WHHTMLTOPDF: str = os.environ.get("PATH_WHHTMLTOPDF")
+    PDF_HTML_PATH: str = os.environ.get("PDF_HTML_PATH")
+    PDF_CSS_PATH: str = os.environ.get("PDF_CSS_PATH")

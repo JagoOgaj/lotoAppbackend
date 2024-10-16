@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ css_path }}">
+    <title>Récompense - LotoApp</title>
+</head>
+<body>
+    <header>
+        <div class="app-header">
+            <h1>LotoApp</h1>
+            <p>L'application de loterie la plus excitante !</p>
+        </div>
+    </header>
+
+    <div class="unique-id">
+        <p>ID : {{ id }}</p>
+    </div>
+
+    <main>
+        <div class="container">
+            <h2>Félicitations, {{ user_name }} !</h2>
+            <p>Vous avez participé au tirage : <strong>{{ draw_name }}</strong></p>
+            <p>Nous sommes ravis de vous annoncer que vous avez gagné :</p>
+            <p class="reward">{{ reward }} €</p>
+            <div class="qr-code">
+                <img src="{{ qr_code }}" alt="QR Code" style="width: 150px; height: 150px;">
+            </div>
+
+            <!-- Nouvelle section pour l'encaissement des gains -->
+            <div class="encaissement-section mt-4">
+                <h3 class="fw-bold">Encaissement de votre gain</h3>
+                <p>
+                    Pour encaisser votre gain, veuillez vous rapprocher de l'une de nos agences.
+                    Nos agents sont là pour vous aider et vous guider dans le processus d'encaissement.
+                </p>
+                <p>
+                    <strong>Adresse de l'agence la plus proche :</strong>
+                </p>
+                <p>
+                    123 Rue des Gagnants, 75000 Paris
+                </p>
+                <p>
+                    <strong>Horaires :</strong> Du lundi au vendredi, de 9h à 18h.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>Merci d'avoir joué à LotoApp !</p>
+            <p>Continuez à tenter votre chance pour gagner encore plus de récompenses.</p>
+            <small>&copy; 2024 LotoApp. Tous droits réservés.</small>
+        </div>
+    </footer>
+</body>
+</html>

@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     Utilisation :
         Exécutez ce script pour démarrer le serveur :
-        $ python <nom_du_script>.py
+        $ python main.py
         Ensuite, accédez à l'application à l'adresse :
         http://127.0.0.1:8080
 

@@ -1,4 +1,3 @@
-from flask import jsonify
 import random
 from app.schemas import LotteryWinerSchema
 from app.tools import distribute_remainder, compute_gain, structure_scores
