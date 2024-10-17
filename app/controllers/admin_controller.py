@@ -823,6 +823,15 @@ def update_lottery(lottery_id):
 
             lottery.end_date = end_date
         if "status" in lottery_data:
+            if lottery_data["status"] == Status.EN_VALIDATION.value and lottery.status == Status.EN_COUR.value: 
+                if not lottery.participant_count > 0:
+                    return jsonify({
+                        "message" : "Impossible de mettre le tirage en validation car il n'y a pas de joueur",
+                        "errors" : True,
+                        "details" : {
+                            "status" : ["Impossible de mettre le tirage en validation car il n'y a pas de joueur"]
+                        }
+                    }), 404
             lottery.status = lottery_data["status"]
         if "max_participants" in lottery_data:
             lottery.max_participants = lottery_data["max_participants"]
